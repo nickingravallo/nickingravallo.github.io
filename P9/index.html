@@ -1,0 +1,450 @@
+<html>
+<head>
+
+<title>Investigating Performance Bottlenecks in the Plan 9 SPI Driver</title>
+<body style="font-family:'Helvetica'">
+
+
+<style>
+    code.indent{
+        padding-left: 1.8em
+    }
+
+    pre {
+        font-size: 12px;
+    }
+
+    body {
+        background-color: clear;
+        width: 60%;
+        border: 15px clear;
+        padding: 50px;
+        margin: auto;
+        font-size: 17px;
+    }
+    table {
+        border-collapse: collapse;
+        margin: 1em 0;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 8px 12px;
+        text-align: center;
+    }
+    caption {
+        font-weight: bold;
+        margin-bottom: 0.5em;
+    }
+    ol {
+        padding-left: 40px;
+    }
+</style>
+</head>
+
+
+<div>
+<code><a href="../index.html"> < back</a></code><hr>
+
+<center>
+<h1>A Deep Dive into Plan 9 - Investigating Performance Bottlenecks in the Plan 9 SPI Driver</h1>
+<p>Identifying and fixing issues within the Serial Peripheral Interface (SPI) driver for the Raspberry Pi 4 implementation of Plan 9 operating system.</p>
+<i>March 9, 2026</i><hr>
+</center>
+
+<h2>Introduction</h2><hr>
+
+<p>
+The Plan 9 Operating System was developed by Bell Labs, released in 1992 for university use and again in 1995 for non-commercial purposes. Plan 9 was designed to be an improved Unix, primarily emphasizing a file-based system in a much more literal sense than the Unix implementation. In a study focused on scheduling in operating systems, this work takes a deep dive into the Plan 9 operating system, discovering how its scheduling operates alongside making improvements to one of its newer drivers on the Raspberry Pi 4 architecture.
+</p>
+
+<p>
+The circumstances of this study arose from observing flickering in an LED matrix connected via the SPI controller to a Raspberry Pi 4 running Plan 9. Due to performance demands of the LED controller's code, the real-time scheduler was initially suspected of failing. Real-time tasks should maintain high priority and performance should not be diminished despite high operating system load. Further investigation led to discovering performance lapses in the Plan 9 SPI controller on the Raspberry Pi 4.
+</p>
+
+<h2>Technical Background</h2><hr>
+
+<p>
+Several different testing methodologies were developed to discover issues in the real-time scheduler. At first, a simulated system load program was run on each core while simultaneously running the real-time scheduler on each of the Raspberry Pi 4's cores. Then, a solution probing the GPIO driver with simulated load similar to the code in the LED matrix was utilized in the real-time scheduler loop under the control system load. Finally, an investigation into the SPI driver revealed a slowdown in a multi-core environment with non-0 cores suffering a significant reduction in performance. The cause of the performance degradation is then investigated, with a proposed alternative SPI-write polling-based solution.
+</p>
+
+<h2>Simulating Real-Time Scheduler System Load</h2><hr>
+
+<p>
+To stress-test the real-time scheduler, a C program with a calculated 30-second loop was implemented with a 1ms real-time delay. If the RTS functioned correctly, completing 30,000 loop cycles at a real-time delay of 1ms would lead to a roughly 30-second program runtime minus setup overhead. No slowdown should be observed despite simulated system load (a <code>while(1)</code> loop) on adjacent cores due to it prioritizing the real-time labeled task.
+</p>
+
+<pre>
+...
+    pid = getpid();
+    path = smprint("/proc/%d/ctl", pid);
+    cfd = open(path, ORDWR);
+    free(path);
+    fprint(cfd, "wired %d\n", core);
+    fprint(cfd, "period 1ms\n");
+    fprint(cfd, "cost 1ms\n");
+    admitVal = fprint(cfd, "admit\n");
+
+    for (i = 0; i &lt; 30000; i++) {
+        sleep(0);
+    }
+    print("done\n");
+...
+</pre>
+
+<p>
+Despite testing this code across all cores, there was no evidence of any slowdowns due to failure of the real-time scheduler. The LED matrix uses the GPIO and the SPI driver to set an LED pin state, so these drivers were called in our test loop to verify whether there was a degradation in performance.
+</p>
+
+<pre>
+...
+	fdg = open("#G/gpio", OWRITE);
+	if (fdg &lt; 0) {
+		perror("GPIO OPEN");
+		exits(nil);
+	}
+
+	pid = getpid();
+	path = smprint("/proc/%d/ctl", pid);
+	cfd = open(path, ORDWR);
+	free(path);
+	fprint(cfd, "wired %d\n", core);
+	fprint(cfd, "period 1ms\n");
+	fprint(cfd, "cost 1ms\n");
+	admitVal = fprint(cfd, "admit\n");
+	print("admit val - %d\n", admitVal);
+
+	spictl = open("#pi/spictl", ORDWR);
+	spidat = open("#pi/spi0", ORDWR);
+	if (spictl &lt; 0 || spidat &lt; 0) {
+		perror("spi open");
+		exits(nil);
+	}
+
+	memset(buf, 0x41, 8);
+	for (i = 0; i &lt; 30000; i++) {
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		fprint(fdg, "set 25 1\n");
+		pwrite(spidat, buf, 8, 0);
+		sleep(0);
+	}
+	print("done\n");
+...
+</pre>
+
+<p>
+The same simulated load tests were performed, and it was observed that cores 1-3 had a significant system performance reduction. With the simulated load removed, similar results (within ~0.01s) were observed. To verify whether the GPIO driver or the SPI driver was the cause of the performance degradation, two different versions of the test code were written. The first test had the GPIO-write code enabled, while the second test had the SPI-write code enabled. The performance of the GPIO-only test showed no performance degradation, while the SPI-only code showed identical results to the dual GPIO-write and SPI-write code demonstrated previously.
+</p>
+
+<h2>The SPI Driver</h2><hr>
+
+<p>
+Below is a demonstration of the code that was used to probe the SPI driver in an attempt to replicate the slowdown, with results below the code block. Some code provided by Brian Stuart.
+</p>
+
+<pre>
+...
+	pid = getpid();
+	path = smprint("/proc/%d/ctl", pid);
+	cfd = open(path, ORDWR);
+	free(path);
+	fprint(cfd, "wired %d\n", core);
+	fprint(cfd, "period 1ms\n");
+	fprint(cfd, "cost 1ms\n");
+	admitVal = fprint(cfd, "admit\n");
+	print("admit val - %d\n", admitVal);
+
+	spictl = open("#pi/spictl", ORDWR);
+	spidat = open("#pi/spi0", ORDWR);
+	if (spictl &lt; 0 || spidat &lt; 0) {
+		perror("spi open");
+		exits(nil);
+	}
+	memset(buf, 0x41, 8);
+	for (i = 0; i &lt; 30000; i++) {
+		pwrite(spidat, buf, 8, 0);
+		sleep(0);
+	}
+	print("done\n");
+...
+
+</pre>
+
+<table>
+    <caption>
+        Results Invoking SPI Driver
+    </caption>
+    <thead>
+        <tr>
+            <th>Attempt</th>
+            <th>Core 0</th>
+            <th>Core 1</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Run 1</td>
+            <td>30.01s</td>
+            <td>69.68s</td>
+        </tr>
+        <tr>
+            <td>Run 2</td>
+            <td>30.02s</td>
+            <td>69.68s</td>
+        </tr>
+        <tr>
+            <td>Run 3</td>
+            <td>30.01s</td>
+            <td>69.67s</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>
+Results indicated a 133% slowdown upon invoking the SPI driver on cores other than core 0. Similar results were reported on cores 2 and 3.
+</p>
+
+<p>
+The performance degradation suggested issues with cross-core interrupts. The existing driver utilized the Direct Memory Access (DMA) controller. While DMA allows for parallel processing, the overhead of setup and interrupt handling across multiple cores appeared to be the bottleneck. The target of our testing was within the <code>spirw</code> function.
+</p>
+
+<p>
+A polling-based solution that bypasses the DMA controller was tested, where the SPI driver manually copies data to the SPI controller while utilizing loop guards. In this implementation, the new <code>spirw</code> code loops through the buffer data, copy its contents to the SPI controller, and utilize loop guards until transfers are complete.
+</p>
+
+<pre>
+void spirw(uint cs, void *buf, int len){
+    int i;
+    // ... initialization code unchanged ...
+    spi.regs->cs = Rxclear | Txclear | Adcs | Ta;
+    for (i = 0; i &lt; len; i++) {
+        spi.regs->data = ((char*)buf)[i];
+        while ((spi.regs->cs & Txd) == 0);
+    }
+    while ((spi.regs->cs & Done) == 0);
+    spi.regs->cs = 0;
+    qunlock(&spi.lock);
+    poperror();
+}
+</pre>
+
+<h2>Comparative Results</h2><hr>
+
+<p>
+The polling solution eliminated the multi-core slowdown and allowed for higher data throughput per real-time cycle. No interface slowdown or hanging due to the kernel directly processing the SPI interface request was experienced, which was initially raised as a concern as the parallelism provided by the DMA controller was removed.
+</p>
+
+<table>
+    <caption>
+        Polling vs. DMA Performance
+    </caption>
+    <thead>
+        <tr>
+            <th></th>
+            <th colspan="2">Polling</th>
+            <th colspan="2">DMA</th>
+        </tr>
+        <tr>
+            <th>Run</th>
+            <th>Core 0</th>
+            <th>Core 1</th>
+            <th>Core 0</th>
+            <th>Core 1</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Run 1</td>
+            <td>30.01s</td>
+            <td>30.02s</td>
+            <td>30.01s</td>
+            <td>69.68s</td>
+        </tr>
+        <tr>
+            <td>Run 2</td>
+            <td>30.02s</td>
+            <td>30.02s</td>
+            <td>30.02s</td>
+            <td>69.68s</td>
+        </tr>
+        <tr>
+            <td>Run 3</td>
+            <td>30.03s</td>
+            <td>30.02s</td>
+            <td>30.01s</td>
+            <td>69.67s</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Performance Degradation Cause</h2><hr>
+
+<p>
+Investigation into the Pi 4 system interrupt implementations in Plan 9 <code>src/9/bcm/trap4.c</code> revealed the cause for the slowdown experienced when interfacing with the SPI driver.
+</p>
+
+<pre>
+Nsgi =	16,		/* software-generated (inter-processor) intrs */
+Nppi =	32,		/* sgis + other private peripheral intrs */
+...
+...
+if (m->machno == 0) {
+	cpumask = 1&lt;&lt;0;				/* just cpu 0 */
+	for (i = Nppi; i &lt; sizeof idp->targ; i++)
+		idp->targ[i] = cpumask;
+	...
+}
+else {
+	...
+	for (i = 0; i &lt; Nppi; i++)
+		idp->targ[i] = 1&lt;&lt;machno;
+	...
+} 
+</pre>
+
+<p>
+Core 0 handles all peripheral interrupts, while software-generated interrupts are handled specifically on cores 1-3. This observation is relevant due to the DMA controller's interrupts, which are considered peripherals, occurring on core 0. If a program is running on core 1 with any code that directly or indirectly interfaces with the DMA controller, the DMA initialization will occur on our dedicated core. However, upon the call to <code>dmastart</code> in the <code>spirw</code> SPI write code, the interrupt enable would be handled on core 0.
+</p>
+
+<pre>
+void
+dmastart(int chan, int dev, int dir, void *src, void *dst, int len)
+{
+	Ctlr *ctlr;
+	Cb *cb;
+	int ti;
+
+	ctlr = &dma[chan];
+	if(ctlr->regs == nil){
+		ctlr->regs = (u32int*)(DMAREGS + chan*Regsize);
+		ctlr->cb = xspanalloc(sizeof(Cb), Cbalign, 0);
+		assert(ctlr->cb != nil);
+		dmaregs[Enable] |= 1&lt;&lt;chan;
+		ctlr->regs[Cs] = Reset;
+		while(ctlr->regs[Cs] & Reset)
+			;
+		intrenable(IRQDMA(chan), dmainterrupt, ctlr, 0, "dma");
+	}
+}
+
+static void
+dmainterrupt(Ureg*, void *a)
+{
+	Ctlr *ctlr;
+
+	ctlr = a;
+	ctlr->regs[Cs] = Int;
+	ctlr->dmadone = 1;
+	wakeup(&ctlr->r);
+}
+</pre>
+
+<p>
+The cross-core wakeup inside of <code>dmainterrupt()</code> causes the delay in the real-time scheduler.
+</p>
+
+<pre>
+#define IRQDMA              16
+#define IRQDMA(chan)	(IRQdma0+(chan))
+</pre>
+
+<p>
+IRQdma0 is defined as interrupt request number 16. The logic inside of <code>intrenable()</code> (defined as <code>irqenable()</code>) shows that all DMA interactions will be handled on core 0.
+</p>
+
+<pre>
+...We call intrenable() in dmastart: (dma.c)
+intrenable(IRQDMA(chan), dmainterrupt, ctlr, 0, "dma");
+
+....Which is defined as: (fns.h)
+#define intrenable(i, f, a, b, n) irqenable((i), (f), (a))
+
+...IRQLOCAL and IRQGLOBAL are defined here: (trap4.c)
+//src: trap4.c
+#define IRQLOCAL(irq)	((irq) - IRQlocal + 13 + 16)
+#define IRQGLOBAL(irq)	((irq) + 64 + 32)
+...
+/*
+ *  enable an irq interrupt
+ *  note that the same private interrupt may be enabled on multiple cpus
+ */
+void
+irqenable(int irq, void (*f)(Ureg*, void*), void* a)
+{
+	Vctl *v;
+	int ena;
+	static char name[] = "anon";
+
+	/* permute irq numbers for pi4 */
+	if(irq &gt;= IRQlocal) // note: io.h:23:	IRQlocal	= 96,
+		irq = IRQLOCAL(irq);
+	else
+		irq = IRQGLOBAL(irq);
+	if(irq &gt;= nelem(vctl))
+		panic("irqenable irq %d", irq);
+
+
+	...
+}
+...
+</pre>
+
+<p>
+The interrupt request for DMA is considered a global interrupt request, which is calculated to be above request number 32, placing the interrupt handler on core 0. Therefore, when the SPI-write code is called using the DMA solution on cores 1-3, the interrupt requires a cross-core wakeup.
+</p>
+
+<h2>Alternative Solutions</h2><hr>
+
+<p>
+An alternative solution is proposed which would reroute the DMA controller interrupt. Using <code>intrto(int, int)</code>, a program calling the SPI driver, thus the DMA driver, would now have its respective driver calls occur on the original process' core. For example, a process running on core 2 would reroute the DMA interrupt to core 2, and a new process on core 3 would reroute the DMA interrupt to core 3.
+</p>
+
+<p>
+The performance improvements were identical to the polling solution, with an expected 30-second runtime occurring for our test program across all cores. Consecutive and parallel runs across different cores also performed as expected. No side effects from this interrupt-based solution were reported in the usability testing of the operating system.
+</p>
+
+<p>
+This proposed interrupt-based solution is a much more invasive change than our polling solution, but given its stability and speed it is worth consideration.
+</p>
+
+<pre>
+// dma.c
+166		...
+167		intrenable(IRQDMA(chan), dmainterrupt, ctlr, 0, "dma");
+168	}
+->
+->	intrto(m->machno, (IRQDMA(chan) + 64 + 32));
+->
+169	cb = ctlr->cb;
+170	ti = 0;
+171	switch(dir){
+	...
+</pre>
+
+<h2>Acknowledgements</h2><hr>
+
+<p>
+A special thank you to Brian Stuart for his guidance in this research. His expertise on the inner workings of Plan 9 and his overall support were a tremendous help.
+</p>
+
+<h2>References</h2><hr>
+
+<p>
+Brian Stuart. Source code for <code>ledmat.c</code>. 2024. Led Matrix Controller Code, Drexel University.
+</p>
+
+<p>
+Bell Labs. Plan 9 from Bell Labs Source. 2021. Available at <a href="https://github.com/0intro/9legacy/tree/main">https://github.com/0intro/9legacy/tree/main</a>.
+</p>
+
+</div>
+</html>

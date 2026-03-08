@@ -37,13 +37,14 @@
 
 <hr>
 
-<h1>A Deep Dive into Plan 9 - Investigating Performance Bottlenecks in the Plan 9 Real-Time Scheduler</h1>
-<i>March 2, 2026</i>
+<h1>A Deep Dive into Plan 9 - Investigating Performance Bottlenecks in the Plan 9 SPI Driver</h1>
+<i>March 9, 2026</i>
 <p>
-The Plan9 Operating System was developed by Bell Labs, released in 1992 for university use and again in 1995 for non-commercial purposes. Plan9 was designed to be an 'improved Unix', primarily emphasizing a file-based system in a much more literal sense than the Unix implementation. In a study focused on scheduling in operating systems, this work takes a deep dive into the Plan9 operating system, discovering how its scheduling operates alongside making improvements to one of its newer drivers. 
-The circumstances of this study arose from observing flickering in an LED matrix connected via the serial port to a Raspberry Pi 4 running Plan 9. Real-time tasks should maintain high priority and performance should not be diminished despite high operating system load. The Plan9 real-time scheduler (RTS) was suspected of failing to perform under high system load.
+The Plan 9 Operating System was developed by Bell Labs, released in 1992 for university use and again in 1995 for non-commercial purposes. Plan 9 was designed to be an improved Unix, primarily emphasizing a file-based system in a much more literal sense than the Unix implementation. In a study focused on scheduling in operating systems, this work takes a deep dive into the Plan 9 operating system, discovering how its scheduling operates alongside making improvements to one of its newer drivers on the Raspberry Pi 4 architecture.
+
+The circumstances of this study arose from observing flickering in an LED matrix connected via the SPI controller to a Raspberry Pi 4 running Plan 9. Due to performance demands of the LED controller's code, the real-time scheduler was initially suspected of failing. Real-time tasks should maintain high priority and performance should not be diminished despite high operating system load. Further investigation led to discovering performance lapses in the Plan 9 SPI controller on the Raspberry Pi 4. 
 </p>
-<i>Coming soon...</i><hr>
+<a href="P9/index.html">Continue reading...</a><hr>
 
 <h1>Discovering Flaws in Anti-Cheat Systems - Responsibly Disclosing Vulnerabilities in Supercell Games</h1>
 <i>January 22, 2022 (published April 14, 2022)</i>
