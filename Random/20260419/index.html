@@ -66,9 +66,27 @@ Solving a complete game tree requires a machine with 512GB of ram at the minimum
 <hr><h2>Why is TurboFire so memory-intensive?</h2><hr>
 
 <p>
-In short, TurboFire currently has no memory optimizations to thin down the game tree, outside of low hanging fruit such as using <code>int8_t</code> for the active player and betting action, and using <code>uint16_t</code> for betting sizes. Each hand combination represented inside of TurboFire utilizes around ~200MB, with 1326*2 combinations of hands being represented in a full tree. In a reasonable situation, such as a 3! pot 6max between the BTN and UTG+1, the game tree will only require ~50GB of memory. There are several improvements that can be made, including isomorphic runouts and quantizing regret and strategy values.
+In short, TurboFire currently has no memory optimizations to thin down the game tree, outside of low hanging fruit such as using <code>int8_t</code> for the active player and betting action, and using <code>uint16_t</code> for betting sizes. Each hand combination represented inside of TurboFire utilizes around ~200MB, with a range distribution of 1326*2 possible hands being represented in a full tree. In a reasonable situation, such as a 3! pot 6max between the BTN and UTG+1, the game tree will only require ~50GB of memory. There are several improvements that can be made, including isomorphic runouts and quantizing regret and strategy values.
+
+<!--
 </p>
-<a href="https://github.com/nickingravallo/TurboFire/tree/8854916078a3de4a4c5ded6d7e075a49532a7bb0">TurboFire 1.0 Code</a>
+<hr>
+<h2>How does TurboFire work?</h2>
+<hr>
+<p>
+TurboFire operates using the Discounted Counterfactual Regret [Minimization] (DCFR) algorithm. It utilizes a game tree, with the flop action beginning at the root, followed by action nodes, chance nodes (drawing cards), and terminal nodes, where a showdown or fold occurs. Each node in the tree represents a state, such as a card being drawn or an action being taken. The game tree is incredibly large, despite defining certain bet sizes the solver must use, such as 33% of the pot, 52% of the pot, and 100% of the pot. 
+</p>
+<p>
+For every single action taken, for every single combination (hand) in our range, we are navigating down the game tree in order to determine the game-theory optimal strategy, which grows towards nash equilibrium. When we reach the terminal node (showdown or fold), we take the EV gained or loss and pass it back up to the node that belongs to the action we took.
+</p>
+<p>
+Regret is calculated as the expected value for a specific action, minus the average expected value of the node.
+</p>
+--!>
+
+<hr>
+<p>
+<center><a href="https://github.com/nickingravallo/TurboFire/tree/8854916078a3de4a4c5ded6d7e075a49532a7bb0">TurboFire 1.0 Code</a></center>
 </p>
 
 <!--
