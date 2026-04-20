@@ -1,0 +1,81 @@
+<html>
+<head>
+
+<title>TurboFire v0.1</title>
+<body style="font-family:'Helvetica'">
+
+
+<style>
+    code{
+	font-size: 14px;
+    }
+
+    pre {
+        font-size: 12px;
+    }
+
+    body {
+        background-color: clear;
+        width: 60%;
+        border: 15px clear;
+        padding: 50px;
+        margin: auto;
+        font-size: 17px;
+    }
+    table {
+        border-collapse: collapse;
+        margin: 1em 0;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 8px 12px;
+        text-align: center;
+    }
+    caption {
+        font-weight: bold;
+        margin-bottom: 0.5em;
+    }
+    ol {
+        padding-left: 40px;
+    }
+</style>
+</head>
+
+
+<div>
+<code><a href="../../index.html"> < back</a></code><hr>
+
+<center>
+<h1>TurboFire v0.1</h1>
+<p>Incredibly unfortunate timing for a RAM crisis</p>
+<i>April 20, 2026</i><hr>
+</center>
+
+<p>
+TurboFire is a game-theory-optimal poker solver that has been in development since the end of 2025, with serious development beginning in early 2026.
+A poker solver's goal, and thus TurboFire's goal, is to generate an optimal response to an opponents action, finding the 'correct' way to play any hand on any given board.
+Although this technology can be used for bots, it is mainly utilized in hand analysis and as a study tool for professionals.
+TurboFire, in its current state, is not ready for real-world use.
+Solving a complete game tree requires a machine with 512GB of ram at the minimum.
+</p>
+
+<hr><h2>Why is TurboFire so memory-intensive?</h2><hr>
+
+<p>
+In short, TurboFire currently has no memory optimizations to thin down the game tree, outside of low hanging fruit such as using <code>int8_t</code> for the active player and betting action, and using <code>uint16_t</code> for betting sizes. Each hand combination represented inside of TurboFire utilizes around ~200MB, with 1326*2 combinations of hands being represented in a full tree. In a reasonable situation, such as a 3! pot 6max between the BTN and UTG+1, the game tree will only require ~50GB of memory. There are several improvements that can be made, including isomorphic runouts and quantizing regret and strategy values.
+</p>
+<a href="https://github.com/nickingravallo/TurboFire/tree/8854916078a3de4a4c5ded6d7e075a49532a7bb0">TurboFire 1.0 Code</a>
+</p>
+
+<!--
+<pre>
+   Example of code in here
+</pre>
+--!>
+
+</div>
+</html>
