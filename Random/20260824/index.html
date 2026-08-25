@@ -1,0 +1,149 @@
+
+<html>
+<head>
+
+<title>nashgpt 1.6</title>
+
+
+<style>
+    code{
+	font-size: 14px;
+    }
+
+    pre {
+        font-size: 12px;
+    }
+
+    body {
+        background-color: clear;
+        width: 60%;
+        border: 15px clear;
+        padding: 50px;
+        margin: auto;
+        font-size: 17px;
+    }
+    table {
+        border-collapse: collapse;
+        margin: 1em 0;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 8px 12px;
+        text-align: center;
+    }
+    caption {
+        font-weight: bold;
+        margin-bottom: 0.5em;
+    }
+    ol {
+        padding-left: 40px;
+    }
+</style>
+</head>
+<body style="font-family:'Helvetica'">
+
+
+<div>
+<code><a href="../../index.html">&lt; back</a></code><hr>
+
+<center>
+<h1>nashgpt 1.6</h1>
+<i>August 24, 2026</i><hr>
+</center>
+
+<p>
+<code>nashgpt 1.6</code> is an improved version of the original <a href="../20260731/index.html">nashgpt</a>. Nashgpt is a flop-only transformer model that is trained on the flop data of TurboFire, our game theory optimal (GTO) poker solver. GTO poker is perfect-poker where nash equilibrium is reached. It can be best imagined as two players training against each other, trying to minimize their exploits, or flaws in their game strategy, converging to a strategy where one player cannot win outside of variance. Unfortunately, solving for a single full-street hand takes more time and much more memory than can be afforded in 2026. To avoid ballooning costs, nashgpt is currently only trained on only the flop due to the large growth of the game tree that occurs once the turn and river are added, although we do have plans to workaround that issue. Note that we have not <i>proved</i> that the output is GTO yet. We can test the flop solver now with convergence and exploitability checks, while adding later streets will only make that validation more difficult. For now, when we say GTO, we mean the output of the algorithm used by poker solvers. 
+</p>
+
+<p>
+There's a few changes made within this version of the model. To begin, we shrunk the parameter count from 57M to 25.2M as a larger model was not proven necessary. We wanted to test whether a smaller model could learn the same strategy without assuming that 57M parameters were required. Next, we shrunk the training through adding isomorphism to the solver - creating buckets of similar hands. For example, As Ks on 7s 6h 2d is equivalent to Ah Kh on 7h 6d 2c when every suit in the hole cards and flop is relabeled by the same permutation. There are only 1,755 flops when implementing isomorphism, so after reducing the hole cards to a tighter 30% range compared to the original wide range, we could fit all possible combinations of flops and hands in a ~1.2GB training file. Lastly, we solved each flop for longer to push us towards nash equilibrium.
+</p>
+
+<p>
+We also added multiple different depths into the game tree, allowing raises. The model struggled a few nodes deep (responding to a check raise, for example) but managed to perform well at shallower nodes. This is a large improvement over the original nashgpt which would only allow for an action and response. 
+</p>
+<p>
+Introducing isomorphism added a few additional benefits. We were able to show that the model began learning board textures by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed us that suit canonicalization is still required instead of being something the model learned on its own. In our results at the bottom of the page, a fresh solver output is compared against canonical and non-canonical model inputs across 5 different flops.
+</p>
+
+<p>
+There was originally a nashgpt 1.5 trained, but we had to throw out the results. It performed much better than this version, but we had made a ridiculous error - we overfit the model. We had simply fit all canonical hands into its weights, acting as a very expensive and inefficient form of compression. It also included a solver bug that led us to folding almost every hand against a raise. To fix this issue, we reserved ~150 extra flops to validate the data, which seemed to fix the issue. If you would like to replicate our results, navigate onto our GitHub page for TurboFire, find the 'llm' branch, and run the bash training script under 'src'. The files used for training the model are also included!
+</p>
+
+<hr>
+<center>
+<button onclick="showSpot(0)">Depth 0</button>
+<button onclick="showSpot(1)">Depth 1</button>
+<button onclick="showSpot(2)">Depth 2</button>
+<button onclick="showSpot(3)">Depth 3</button>
+<button onclick="showSpot(4)">Depth 2 (paired flop)</button>
+
+<div class="spot-panel">
+<p>Prompt: <code>&lt;HOLE&gt; Ah Kh &lt;FLOP&gt; Qh Jd 7c &lt;BETTING&gt;</code></p>
+<table>
+<tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
+<tr><td>HERO_CHECK</td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
+<tr><td>HERO_ALLIN</td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
+<tr><td>HERO_BET100</td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
+<tr><td>HERO_BET40</td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
+</table>
+</div>
+
+<div class="spot-panel" hidden>
+<p>Prompt: <code>&lt;HOLE&gt; Jc 7c &lt;FLOP&gt; 9h 8h 6d &lt;BETTING&gt; OPP_CHECK</code></p>
+<table>
+<tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
+<tr><td>HERO_ALLIN</td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
+<tr><td>HERO_BET40</td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
+<tr><td>HERO_BET100</td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
+<tr><td>HERO_CHECK</td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
+</table>
+</div>
+
+<div class="spot-panel" hidden>
+<p>Prompt: <code>&lt;HOLE&gt; Js 5s &lt;FLOP&gt; Ah 7h 2h &lt;BETTING&gt; HERO_CHECK OPP_BET40</code></p>
+<table>
+<tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
+<tr><td>HERO_FOLD</td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
+<tr><td>HERO_ALLIN</td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
+<tr><td>HERO_CALL</td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
+<tr><td>HERO_RAISE_3X</td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
+</table>
+</div>
+
+<div class="spot-panel" hidden>
+<p>Prompt: <code>&lt;HOLE&gt; Js Ts &lt;FLOP&gt; Ah Kd Qc &lt;BETTING&gt; OPP_CHECK HERO_BET40 OPP_RAISE_3X</code></p>
+<table>
+<tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
+<tr><td>HERO_CALL</td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
+<tr><td>HERO_FOLD</td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
+</table>
+</div>
+
+<div class="spot-panel" hidden>
+<p>Prompt: <code>&lt;HOLE&gt; Ah Qh &lt;FLOP&gt; Kd Kh 4c &lt;BETTING&gt; HERO_CHECK OPP_ALLIN</code></p>
+<table>
+<tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
+<tr><td>HERO_FOLD</td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
+<tr><td>HERO_CALL</td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
+</table>
+</div>
+
+<script>
+function showSpot(index) {
+    document.querySelectorAll('.spot-panel').forEach(function(panel, i) {
+        panel.hidden = i !== index;
+    });
+}
+</script>
+
+<p>(It should be noted this is the first time I have used java script on this site, with it being js-free for ~6 years)<p>
+
+</center>
+</div>
+</body>
+</html>
