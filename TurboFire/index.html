@@ -1,0 +1,63 @@
+<html>
+<head>
+
+<title>TurboFire and NashGPT - Creating a GTO Poker Solver and Training a Transformer Model on its Output</title>
+<body style="font-family:'Helvetica'">
+
+
+<style>
+    code{
+	font-size: 14px;
+    }
+
+    pre {
+        font-size: 12px;
+    }
+
+    body {
+        background-color: clear;
+        width: 60%;
+        border: 15px clear;
+        padding: 50px;
+        margin: auto;
+        font-size: 17px;
+    }
+    table {
+        border-collapse: collapse;
+        margin: 1em 0;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 8px 12px;
+        text-align: center;
+    }
+    caption {
+        font-weight: bold;
+        margin-bottom: 0.5em;
+    }
+    ol {
+        padding-left: 40px;
+    }
+</style>
+</head>
+
+
+<div>
+<code><a href="../index.html"> < back</a></code><hr>
+
+<center>
+<h1>NashGPT - Training a 25M Parameter Transformer Model on a GTO Poker Solver</h1>
+<p>A fun experiment creating a flop-only model on my game theory optimal poker solver.</p>
+<i>November 14, 2026</i><hr>
+</center>
+
+<h2>Introduction</h2><hr>
+
+<p>
+Poker play is considered game theory optimal when the players converge to a strategy which is not exploitable, meaning no deviation in strategy will provide any advantage to any player. An algorithm was discovered many years ago which pins <i>P</i> players against each other, starting with an equal strategy for every action, and tweaking the chances of taking certain actions until reaching that state of non-exploitability known as <i>nash equilibrium.</i> Commerical products hide the math and logic behind the solver, which lead to it appearing to be a magic black box that tells you how you should have played a hand. Once we learn how the algorithm works, and create our own solver, we can take the patterns in the output and create a transformer model out of them!
+</p>
+
