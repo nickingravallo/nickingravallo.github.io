@@ -1,8 +1,10 @@
+<!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Investigating Performance Bottlenecks in the Plan 9 SPI Driver</title>
-<body style="font-family:'Helvetica'">
+
 
 
 <style>
@@ -43,7 +45,10 @@
         padding-left: 40px;
     }
 </style>
+<link rel="stylesheet" href="../article-responsive.css">
 </head>
+<body style="font-family:'Helvetica'">
+
 
 
 <div>
@@ -179,7 +184,7 @@ Below is a demonstration of the code that was used to probe the SPI driver in an
 
 </pre>
 
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
     <caption>
         Results Invoking SPI Driver
     </caption>
@@ -207,7 +212,7 @@ Below is a demonstration of the code that was used to probe the SPI driver in an
             <td>69.67s</td>
         </tr>
     </tbody>
-</table>
+</table></div>
 
 <p>
 Results indicated a 133% slowdown upon invoking the SPI driver on cores other than core 0. Similar results were reported on cores 2 and 3.
@@ -243,7 +248,7 @@ void spirw(uint cs, void *buf, int len){
 The polling solution eliminated the multi-core slowdown and allowed for higher data throughput per real-time cycle. No interface slowdown or hanging due to the kernel directly processing the SPI interface request was experienced, which was initially raised as a concern as the parallelism provided by the DMA controller was removed.
 </p>
 
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
     <caption>
         Polling vs. DMA Performance
     </caption>
@@ -284,7 +289,7 @@ The polling solution eliminated the multi-core slowdown and allowed for higher d
             <td>69.67s</td>
         </tr>
     </tbody>
-</table>
+</table></div>
 
 <h2>Performance Degradation Cause</h2><hr>
 
@@ -447,4 +452,5 @@ Bell Labs. Plan 9 from Bell Labs Source. 2021. Available at <a href="https://git
 </p>
 
 </div>
+</body>
 </html>

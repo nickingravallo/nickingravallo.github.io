@@ -1,6 +1,7 @@
-
+<!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>nashgpt 1.6</title>
 
@@ -43,8 +44,11 @@
         padding-left: 40px;
     }
 </style>
+<link rel="stylesheet" href="../../article-responsive.css">
 </head>
 <body style="font-family:'Helvetica'">
+
+
 
 
 <div>
@@ -84,53 +88,53 @@ There was originally a nashgpt 1.5 trained, but we had to throw out the results.
 
 <div class="spot-panel">
 <p>Prompt: <code>&lt;HOLE&gt; Ah Kh &lt;FLOP&gt; Qh Jd 7c &lt;BETTING&gt;</code></p>
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
 <tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
 <tr><td>HERO_CHECK</td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
 <tr><td>HERO_ALLIN</td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
 <tr><td>HERO_BET100</td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
 <tr><td>HERO_BET40</td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
-</table>
+</table></div>
 </div>
 
 <div class="spot-panel" hidden>
 <p>Prompt: <code>&lt;HOLE&gt; Jc 7c &lt;FLOP&gt; 9h 8h 6d &lt;BETTING&gt; OPP_CHECK</code></p>
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
 <tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
 <tr><td>HERO_ALLIN</td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
 <tr><td>HERO_BET40</td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
 <tr><td>HERO_BET100</td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
 <tr><td>HERO_CHECK</td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
-</table>
+</table></div>
 </div>
 
 <div class="spot-panel" hidden>
 <p>Prompt: <code>&lt;HOLE&gt; Js 5s &lt;FLOP&gt; Ah 7h 2h &lt;BETTING&gt; HERO_CHECK OPP_BET40</code></p>
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
 <tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
 <tr><td>HERO_FOLD</td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
 <tr><td>HERO_ALLIN</td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
 <tr><td>HERO_CALL</td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
 <tr><td>HERO_RAISE_3X</td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
-</table>
+</table></div>
 </div>
 
 <div class="spot-panel" hidden>
 <p>Prompt: <code>&lt;HOLE&gt; Js Ts &lt;FLOP&gt; Ah Kd Qc &lt;BETTING&gt; OPP_CHECK HERO_BET40 OPP_RAISE_3X</code></p>
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
 <tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
 <tr><td>HERO_CALL</td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
 <tr><td>HERO_FOLD</td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
-</table>
+</table></div>
 </div>
 
 <div class="spot-panel" hidden>
 <p>Prompt: <code>&lt;HOLE&gt; Ah Qh &lt;FLOP&gt; Kd Kh 4c &lt;BETTING&gt; HERO_CHECK OPP_ALLIN</code></p>
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
 <tr><th>Action</th><th>Solver</th><th>Canonical</th><th>Non-canonical</th></tr>
 <tr><td>HERO_FOLD</td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
 <tr><td>HERO_CALL</td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
-</table>
+</table></div>
 </div>
 
 <script>

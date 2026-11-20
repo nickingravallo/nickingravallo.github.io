@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Training a Transformer Model on Poker Solver Output for Fun and (No) Profit</title>
-<meta name="description" content="Building TurboFire, a poker solver, and training NashGPT on its output: regret minimization, transformer training, and learned poker concepts.">
 <style>
     body { font-family: Helvetica, Arial, sans-serif; width: 60%; padding: 50px; margin: auto; font-size: 17px; }
     code { font-size: 14px; overflow-wrap: anywhere; }
@@ -27,7 +26,7 @@
 </head>
 <body>
 <main>
-<nav aria-label="Home"><code><a href="../index.html">&lt; back</a></code></nav><hr>
+<nav aria-label="Home"><code><a target="_blank" rel="noopener noreferrer" href="../index.html">&lt; back</a></code></nav><hr>
 <article>
 <header>
 <h1>Training a Transformer Model on Poker Solver Output for Fun and (No) Profit</h1>
@@ -110,7 +109,7 @@ Regret within the algorithm is used slightly differently than in common vernacul
 <h2 id="dcfr">DCFR</h2><hr>
 
 <p>
-The algorithm used in the solver described in this blog post is <em>Discounted Counterfactual Regret  Minimization</em> <a href="#reference-dcfr" aria-label="Reference 1">[1]</a>. The poker game is defined as a game tree, where each action (check, bet, raise) creates a new branch from the root that grows outward. These are defined as action nodes. The game tree begins to explode as <em>chance nodes</em> are hit, which is when the environment affects the game state. In poker, the environment is a card being drawn from the deck at random. In order to accurately simulate a poker game, we must account for each card drawn from the deck, at both the turn and river, which is (49 choose 2) possible branches. The <em>terminal node</em> occurs when one player folds, or all possible actions end.
+The algorithm used in the solver described in this blog post is <em>Discounted Counterfactual Regret  Minimization</em> <a target="_blank" rel="noopener noreferrer" href="#reference-dcfr" aria-label="Reference 1">[1]</a>. The poker game is defined as a game tree, where each action (check, bet, raise) creates a new branch from the root that grows outward. These are defined as action nodes. The game tree begins to explode as <em>chance nodes</em> are hit, which is when the environment affects the game state. In poker, the environment is a card being drawn from the deck at random. In order to accurately simulate a poker game, we must account for each card drawn from the deck, at both the turn and river, which is (49 choose 2) possible branches. The <em>terminal node</em> occurs when one player folds, or all possible actions end.
 </p>
 
 <p>
@@ -130,18 +129,18 @@ Imagine you accumulated -2 regret from checking, 3 regret from calling, 2 from r
 </p>
 
 <p>
-Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From <a href="https://blog.gtowizard.com/range-morphology/">this article by GTO Wizard</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
+Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/range-morphology/">this article by GTO Wizard</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
 </p>
 
 <figure>
-<a href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200"><img src="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200" alt="GTO Wizard poker range chart illustrating aggressive hands and bluffs." loading="lazy"></a>
-<figcaption>Credit: <a href="https://blog.gtowizard.com/range-morphology/">GTO Wizard — Range Morphology</a>. <a href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200">View original image</a>.</figcaption>
+<a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200"><img src="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200" alt="GTO Wizard poker range chart illustrating aggressive hands and bluffs." loading="lazy"></a>
+<figcaption>Credit: <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/range-morphology/">GTO Wizard — Range Morphology</a>. <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200">View original image</a>.</figcaption>
 </figure>
 
 <h2 id="discounting">Discounting</h2><hr>
 
 <p>
-The last part of the algorithm is the <em>D</em> in DCFR, which refers to <em>discount</em>. The algorithm can learn incorrect biases very early on in the training cycle, which can take a very long time to train out. By discounting earlier runs, it can help mitigate a scenario with a large regret dominating future strategies, such as an initial 500,000 regret accumulation for a check and 1 regret for raising $3. The discounting is applied after each iteration, with multiple variables for calculating decay. The <a href="https://arxiv.org/pdf/1809.04040">paper describing the algorithm</a> is linked at the bottom of the page!
+The last part of the algorithm is the <em>D</em> in DCFR, which refers to <em>discount</em>. The algorithm can learn incorrect biases very early on in the training cycle, which can take a very long time to train out. By discounting earlier runs, it can help mitigate a scenario with a large regret dominating future strategies, such as an initial 500,000 regret accumulation for a check and 1 regret for raising $3. The discounting is applied after each iteration, with multiple variables for calculating decay. The <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1809.04040">paper describing the algorithm</a> is linked at the bottom of the page!
 </p>
 
 <h2 id="transformer-models">Transformer Models</h2><hr>
@@ -185,7 +184,7 @@ By running similar hands (flushes, one-pairs, etc) through the model, certain co
 <h2 id="training">Training</h2><hr>
 
 <p>
-It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them <a href="../Random/20260731/index.html">NashGPT 1.0</a>, 1.5, <a href="../Random/20260824/index.html">1.6</a> and 1.7, which is described within this article. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (ie <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
+It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them <a target="_blank" rel="noopener noreferrer" href="../Random/20260731/index.html">NashGPT 1.0</a>, 1.5, <a target="_blank" rel="noopener noreferrer" href="../Random/20260824/index.html">1.6</a> and 1.7, which is described within this article. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (ie <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
 </p>
 
 <p>
@@ -197,7 +196,7 @@ Unfortunately I still managed to overfit the model, as I did not include a rando
 </p>
 
 <p>
-NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The <a href="../Random/20260824/index.html">NashGPT 1.6 results</a> compare fresh solver output against canonical and non-canonical model inputs.
+NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The <a target="_blank" rel="noopener noreferrer" href="../Random/20260824/index.html">NashGPT 1.6 results</a> compare fresh solver output against canonical and non-canonical model inputs.
 </p>
 
 <p>
@@ -217,12 +216,12 @@ Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &
 <h2 id="influenced-by-lyra">Influenced by Lyra</h2><hr>
 
 <p>
-Because of the model’s small size, we can very easily peek inside and visualize these shared concepts. Using a similar concept to <a href="https://github.com/lyramakesmusic/neuron-explorer">Lyra’s Neuron Explorer</a>, we can visualize how these connected concepts flow throughout the layers:
+Because of the model’s small size, we can very easily peek inside and visualize these shared concepts. Using a similar concept to <a target="_blank" rel="noopener noreferrer" href="https://github.com/lyramakesmusic/neuron-explorer">Lyra’s Neuron Explorer</a>, we can visualize how these connected concepts flow throughout the layers:
 </p>
 
 <figure>
-<a href="images/board-texture.png"><img src="images/board-texture.png" alt="NashGPT visualizer showing correlations for a monotone board across model layers." width="1860" height="1170" loading="lazy"></a>
-<figcaption>Monotone board feature correlations. <a href="images/board-texture.png">View full-size image</a>.</figcaption>
+<a target="_blank" rel="noopener noreferrer" href="images/board-texture.png"><img src="images/board-texture.png" alt="NashGPT visualizer showing correlations for a monotone board across model layers." width="1860" height="1170" loading="lazy"></a>
+<figcaption>Monotone board feature correlations. <a target="_blank" rel="noopener noreferrer" href="images/board-texture.png">View full-size image</a>.</figcaption>
 </figure>
 
 <p>
@@ -234,8 +233,8 @@ Patterns in poker that are natural to humans are picked up by the model. There a
 </p>
 
 <figure>
-<a href="images/suited-hole-cards.png"><img src="images/suited-hole-cards.png" alt="NashGPT visualizer showing correlations for suited hole cards across model layers." width="1836" height="1184" loading="lazy"></a>
-<figcaption>Suited hole-card feature correlations. <a href="images/suited-hole-cards.png">View full-size image</a>.</figcaption>
+<a target="_blank" rel="noopener noreferrer" href="images/suited-hole-cards.png"><img src="images/suited-hole-cards.png" alt="NashGPT visualizer showing correlations for suited hole cards across model layers." width="1836" height="1184" loading="lazy"></a>
+<figcaption>Suited hole-card feature correlations. <a target="_blank" rel="noopener noreferrer" href="images/suited-hole-cards.png">View full-size image</a>.</figcaption>
 </figure>
 
 <p>
@@ -243,7 +242,7 @@ The model was able to retain a decent amount of strategy compared to the solver.
 </p>
 
 <p>
-First, transformers are able to hold much more complex information than just the face value of the token shown to the user. <code>&lt;BETTING&gt;</code> doesn't just tell the model to produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, <a href="https://www.anthropic.com/research/emotion-concepts-function">they can seemingly represent emotions</a> and understand the patterns of languages they're translating, both natural and programming.
+First, transformers are able to hold much more complex information than just the face value of the token shown to the user. <code>&lt;BETTING&gt;</code> doesn't just tell the model to produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, <a target="_blank" rel="noopener noreferrer" href="https://www.anthropic.com/research/emotion-concepts-function">they can seemingly represent emotions</a> and understand the patterns of languages they're translating, both natural and programming.
 </p>
 
 <p>
@@ -255,7 +254,7 @@ Finally, scaling models is incredibly expensive. Each training run only had cost
 </p>
 
 <p>
-Before concluding, here are some examples taken from the<a href="../Random/20260824/index.html">NashGPT 1.6</a> run:
+Before concluding, here are some examples taken from the<a target="_blank" rel="noopener noreferrer" href="../Random/20260824/index.html">NashGPT 1.6</a> run:
 </p>
 
 <section id="solver-results" aria-labelledby="results-heading">
@@ -343,11 +342,13 @@ Almost a year later, I tried to compile the story of the journey I had taken to 
 <h2 id="references">References</h2><hr>
 
 <ol>
-<li id="reference-dcfr">Noam Brown and Tuomas Sandholm. <a href="https://arxiv.org/abs/1809.04040"><em>Solving Imperfect-Information Games via Discounted Regret Minimization</em></a>. 2019. <a href="https://arxiv.org/pdf/1809.04040">Read the paper (PDF)</a>.</li>
-<li>GTO Wizard. <a href="https://blog.gtowizard.com/range-morphology/"><em>Range Morphology</em></a>. Range image reproduced above via the original image URL.</li>
-<li>Lyra. <a href="https://github.com/lyramakesmusic/neuron-explorer">Neuron Explorer</a>.</li>
-<li>Nick Ingravallo. <a href="https://github.com/nickingravallo/TurboFire">TurboFire source code</a>.</li>
+<li id="reference-dcfr">Noam Brown and Tuomas Sandholm. <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/abs/1809.04040"><em>Solving Imperfect-Information Games via Discounted Regret Minimization</em></a>. 2019. <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1809.04040">Read the paper (PDF)</a>.</li>
+<li>GTO Wizard. <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/range-morphology/"><em>Range Morphology</em></a>. Range image reproduced above via the original image URL.</li>
+<li>Lyra. <a target="_blank" rel="noopener noreferrer" href="https://github.com/lyramakesmusic/neuron-explorer">Neuron Explorer</a>.</li>
+<li>Nick Ingravallo. <a target="_blank" rel="noopener noreferrer" href="https://github.com/nickingravallo/TurboFire">TurboFire source code</a>.</li>
 </ol>
+<hr>
+<p style="text-align: center;"><i><a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=4MQQCFaV2fM&amp;list=RD4MQQCFaV2fM&amp;start_radio=1">(Please don't leave me like this)</a></i></p>
 </article>
 </main>
 <script>

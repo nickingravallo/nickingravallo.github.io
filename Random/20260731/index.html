@@ -1,9 +1,10 @@
-
+<!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>nashgpt</title>
-<body style="font-family:'Helvetica'">
+
 
 
 <style>
@@ -44,7 +45,10 @@
         padding-left: 40px;
     }
 </style>
+<link rel="stylesheet" href="../../article-responsive.css">
 </head>
+<body style="font-family:'Helvetica'">
+
 
 
 <div>
@@ -75,7 +79,7 @@ Most of the pieces required for this project were already in my possession - I o
 The entire output file was ~1.2GB with around 10k solver iterations. I rented an Nvidia A40 for around $0.45 an hour on RunPod, which gave plenty of headroom. Training the model took around 10 hours, with results that were <i>plausibly GTO</i>.</p>
 <hr>
 <center>
-<table>
+<div class="table-scroll" role="region" aria-label="Scrollable data table" tabindex="0"><table>
 <tr>
 <th>Action</th>
 <th>Solver</th>
@@ -118,7 +122,7 @@ The entire output file was ~1.2GB with around 10k solver iterations. I rented an
 <td>7.2%</td>
 <td>+6.8</td>
 </tr>
-</table>
+</table></div>
 </center>
 <hr>
 <center>

@@ -1,0 +1,42 @@
+/* Shared overflow handling and phone layout for the older articles. */
+body {
+    overflow-wrap: anywhere;
+}
+
+img, video {
+    max-width: 100%;
+    height: auto;
+}
+
+pre {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-wrap: normal;
+}
+
+.table-scroll {
+    width: auto;
+    max-width: 100%;
+    padding: 0;
+    margin: 1em 0;
+    overflow-x: auto;
+}
+
+.table-scroll table {
+    margin: 0;
+    overflow-wrap: normal;
+}
+
+@media (max-width: 700px) {
+    body {
+        width: auto;
+        margin: 0;
+        padding: 24px 16px;
+    }
+
+    body > div {
+        width: auto;
+        margin: 0;
+        padding: 0;
+    }
+}
