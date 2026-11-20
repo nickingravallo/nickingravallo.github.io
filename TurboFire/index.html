@@ -41,6 +41,16 @@
 Poker play is considered game theory optimal when the players converge to a strategy which is not exploitable, meaning no deviation in strategy will provide any advantage to any player. An algorithm was discovered many years ago which pits <em>P</em> players against each other, starting with an equal strategy for every action, and tweaking the chances of taking certain actions until reaching that state of non-exploitability known as <em>Nash equilibrium</em>. Commercial products hide the math and logic behind the solver, which leads the internals to appear as a black box that provides you with perfect strategy. Once we learn how the algorithm works and create our own solver, we can take the patterns in the output and create a transformer model out of them.
 </p>
 
+<h2 id="nashgpt-i">TurboFire and NashGPT</h2><hr>
+
+<p>
+TurboFire is a game theory optimal poker solver written in C++. It has none of the creature comforts of a traditional poker solver, such as memory saving techniques or abilities to load custom ranges of hands for you or your opponent. The base project serves as a great foundation for a research, and can be adapted for many different purposes, such as a transformer model. With a bit of work, the actual output of the perfect play of the poker solver could be stored as a large log file, and trained on to create a transformer model. NashGPT is the ~26M parameter model which was trained on the output of the solver, learning the concepts behind game theory optimal strategy in training. 
+</p>
+
+<p>
+If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around to your level of interest and expertise - the code for the solver is linked on the bottom.
+</p>
+
 <h2 id="poker">Poker</h2><hr>
 
 <p>
@@ -68,7 +78,7 @@ Your opponent slams their cards down: <em>King Hearts, 10 Diamonds. </em>You smi
 </p>
 
 <p>
-There’s some slight mumbling on the other side of the table involving expletives and fish. You’re unsure what aquatic life has to do with poker, but there’s $22 sliding your way, and $11 of it your opponent's money.
+There’s some slight mumbling on the other side of the table involving expletives, ranges, fish. You’re unsure what free-range aquatic life has to do with poker, but there’s $22 sliding your way, and $11 of it your opponent's money.
 </p>
 
 <h2 id="perfect-poker">Perfect Poker</h2><hr>
@@ -152,7 +162,7 @@ One of the most common phrases heard in AI-related debates is that an LLM is a n
 A token is the tip of an iceberg, an abstract representation of countless entries which hold many concepts within its high dimensional space. As it flows down through the many layers of the model, certain neurons light up based on the context provided by the other tokens.
 </p>
 
-<h2 id="nashgpt">NashGPT (Implementation)</h2><hr>
+<h2 id="nashgpt-i">NashGPT (Implementation)</h2><hr>
 
 <p>
 For NashGPT, a small token set was defined alongside a distribution of the probability of actions represented as tokens used for the model’s training. We start with defined <code>&lt;START&gt;</code> and <code>&lt;HOLE&gt;</code> tokens (the hole cards being our cards) alongside the flop, and the subsequent actions taken by the players. The next token to be predicted is either a hero’s action, or a villain’s response. In the below example, we have a two-tone (two suits) flop with a mediocre hand. The model will train off the distributions of the possible actions with bias towards the higher values. With time and energy, the concepts hidden within these lines of training data are learned.
