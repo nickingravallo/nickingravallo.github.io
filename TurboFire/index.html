@@ -32,7 +32,7 @@
 <header>
 <h1>Training a Transformer Model on Poker Solver Output for Fun and (No) Profit</h1>
 <p><i>Is bluffing aligned behavior?</i></p>
-<em><time datetime="2026-11-14">November 14, 2026</time></em><hr>
+<em><time datetime="2026-11-19">November 19, 2026</time></em><hr>
 </header>
 
 <h2 id="introduction">Introduction</h2><hr>
@@ -48,7 +48,7 @@ TurboFire is a game theory optimal poker solver written in C++. It has none of t
 </p>
 
 <p>
-If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around to your level of interest and expertise - the code for the solver is linked on the bottom.
+If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around the article to your level of interest and expertise - the code for the solver is linked on the bottom. This entire post is human written :)
 </p>
 
 <h2 id="poker">Poker</h2><hr>
@@ -62,7 +62,7 @@ You have two Aces - an <em>Ace of Spades</em> and an <em>Ace of Diamonds</em>. T
 </p>
 
 <p>
-The dealer places three cards on the table, one at a time: <em>9 of Diamonds, 5 of Clubs, King of  Diamonds. </em>
+The dealer places three cards on the table, one at a time: <code>9 of Diamonds, 5 of Clubs, King of Diamonds</code>.
 </p>
 
 <p>
@@ -70,7 +70,7 @@ You bet $3 into the pot. Your opponent freezes, and quickly adds $9 on top, a <e
 </p>
 
 <p>
-<em>(Example: Flop: [9 Diamonds, 5 Clubs, King Diamonds], Turn: [2 Hearts] River: [3 Hearts]) </em>
+<em>(Example: Flop: <code>[9 Diamonds, 5 Clubs, King Diamonds]</code>, Turn: <code>[2 Hearts]</code>, River: <code>[3 Hearts]</code>)</em>
 </p>
 
 <p>
@@ -130,7 +130,7 @@ Imagine you accumulated -2 regret from checking, 3 regret from calling, 2 from r
 </p>
 
 <p>
-Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From <a href="https://blog.gtowizard.com/range-morphology/">this article by GTO Wizard</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical ‘top tier’ hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as “well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!” to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
+Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From <a href="https://blog.gtowizard.com/range-morphology/">this article by GTO Wizard</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
 </p>
 
 <figure>
@@ -185,11 +185,11 @@ By running similar hands (flushes, one-pairs, etc) through the model, certain co
 <h2 id="training">Training</h2><hr>
 
 <p>
-It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them <a href="../Random/20260731/index.html">NashGPT 1.0</a>, 1.5, <a href="../Random/20260824/index.html">1.6</a> and 1.7, which is described within this article. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (ie <code>&lt;FLOP&gt;</code> As Qh 7s). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
+It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them <a href="../Random/20260731/index.html">NashGPT 1.0</a>, 1.5, <a href="../Random/20260824/index.html">1.6</a> and 1.7, which is described within this article. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (ie <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
 </p>
 
 <p>
-NashGPT 1.5 was a slight improvement - twice the amount of training data with half the amount of parameters. The concept of hand isomorphism was introduced, where duplicate hands that are represented identically were removed in order to attempt to learn the concepts rather than accidentally <em>overfitting</em> to the training data, or memorizing the answers. Two examples would be the following flops (<code>&lt;HOLE&gt;</code> 7c 2c <code>&lt;FLOP&gt;</code> As Qh 7s) and (<code>&lt;HOLE&gt;</code> 7d 2d <code>&lt;FLOP&gt;</code> Ac Qs 7c) . Although different suits are used, they are isomorphic in the type of board that is represented.
+NashGPT 1.5 was a slight improvement - twice the amount of training data with half the amount of parameters. The concept of hand isomorphism was introduced, where duplicate hands that are represented identically were removed in order to attempt to learn the concepts rather than accidentally <em>overfitting</em> to the training data, or memorizing the answers. Two examples would be the following flops (<code>&lt;HOLE&gt; 7c 2c &lt;FLOP&gt; As Qh 7s</code>) and (<code>&lt;HOLE&gt; 7d 2d &lt;FLOP&gt; Ac Qs 7c</code>) . Although different suits are used, they are isomorphic in the type of board that is represented.
 </p>
 
 <p>
@@ -201,17 +201,17 @@ NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonica
 </p>
 
 <p>
-The final version, NashGPT 1.7, separated out suits and the rank from the tokens - meaning it was trained on our own cards and flops that looked like 7 d 2 d <code>&lt;FLOP&gt;</code> A c Q s 7 c. This improvement allowed the model to properly learn the concept of suits vs ranks, and begin to properly learn board texture.
+The final version, NashGPT 1.7, separated out suits and the rank from the tokens - meaning it was trained on our own cards and flops that looked like <code>7 d 2 d &lt;FLOP&gt; A c Q s 7 c</code>. This improvement allowed the model to properly learn the concept of suits vs ranks, and begin to properly learn board texture.
 </p>
 
 <h2 id="learned-concepts">Learned Concepts</h2><hr>
 
 <p>
-It’s possible to see how well a model learned a certain concept. For example, in a regular language model, if we pass in the phrase “I’m going to order a cheesesteak” and various other sentences referencing the word cheesesteak, we can see what neurons are activated surrounding the token or within the token. These concepts likely relate to the actual word, alongside food or potentially hunger.
+It’s possible to see how well a model learned a certain concept. For example, in a regular language model, if we pass in the phrase <em>“I’m going to order a cheesesteak”</em> and various other sentences referencing the word cheesesteak, we can see what neurons are activated surrounding the token or within the token. These concepts likely relate to the actual word, alongside food or potentially hunger.
 </p>
 
 <p>
-Since our ‘prompt’ looks like the following: (<code>&lt;START&gt;</code> <code>&lt;HOLE&gt;</code> 7 c 2 c <code>&lt;FLOP&gt;</code> A s Q h 7 s <code>&lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream for the <code>&lt;BETTING&gt;</code> token. If certain neurons keep lighting up, then we know it managed to learn a concept!
+Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream for the <code>&lt;BETTING&gt;</code> token. If certain neurons keep lighting up, then we know it managed to learn a concept!
 </p>
 
 <h2 id="influenced-by-lyra">Influenced by Lyra</h2><hr>
@@ -230,7 +230,7 @@ Because of the model’s small size, we can very easily peek inside and visualiz
 </p>
 
 <p>
-Patterns in poker that are natural to humans are picked up by the model. There are certain activations associated with a previous player raising, or calling, or any general action. In the above picture, the model was able to discern against a monotone flop from a rainbow flop (As Qs 7s vs Ah Qd 7s) for example, and in the picture below the concept of two suited hole cards are highlighted.
+Patterns in poker that are natural to humans are picked up by the model. There are certain activations associated with a previous player raising, or calling, or any general action. In the above picture, the model was able to discern against a monotone flop from a rainbow flop (<code>As Qs 7s</code> vs <code>Ah Qd 7s</code>) for example, and in the picture below the concept of two suited hole cards are highlighted.
 </p>
 
 <figure>
@@ -239,7 +239,23 @@ Patterns in poker that are natural to humans are picked up by the model. There a
 </figure>
 
 <p>
-The model was able to retain a decent amount of strategy compared to the solver. Here are some examples taken from <a href="../Random/20260824/index.html">NashGPT 1.6</a>:
+The model was able to retain a decent amount of strategy compared to the solver. These observations show a highlight a few important items. 
+</p>
+
+<p>
+First, transformers are able to hold much more complex information than just the face value of the token shown to the user. <code>&lt;BETTING&gt;</code> doesn't just tell the model to produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, <a href="https://www.anthropic.com/research/emotion-concepts-function">they can seemingly represent emotions</a> and understand the patterns of languages they're translating, both natural and programming.
+</p>
+
+<p>
+Second, transformer models seem to act as some form of compression. It was seen in the overfit version of NashGPT that had essentially compressed the training data into its weights, and utterly failed when presented with hands it did not see in training. This compression can hold the actual patterns if trained correctly!
+</p>
+
+<p>
+Finally, scaling models is incredibly expensive. Each training run only had cost me a few dollars on an Nvidia A40, but had I added turn and river data into the mix, the training run would have gotten incredibly expensive. Holding all of the training data (potentially terrabytes worth) would have been expensive on its own, without the VRAM required for training the model on each street!
+</p>
+
+<p>
+Before concluding, here are some examples taken from the<a href="../Random/20260824/index.html">NashGPT 1.6</a> run:
 </p>
 
 <section id="solver-results" aria-labelledby="results-heading">
@@ -258,10 +274,10 @@ The model was able to retain a decent amount of strategy compared to the solver.
 <div class="table-scroll"><table>
 <caption>Depth 0 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td>HERO_CHECK</td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
-<tr><td>HERO_ALLIN</td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
-<tr><td>HERO_BET100</td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
-<tr><td>HERO_BET40</td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
+<tr><td><code>HERO_CHECK</code></td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
+<tr><td><code>HERO_ALLIN</code></td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
+<tr><td><code>HERO_BET100</code></td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
+<tr><td><code>HERO_BET40</code></td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-1">
@@ -270,10 +286,10 @@ The model was able to retain a decent amount of strategy compared to the solver.
 <div class="table-scroll"><table>
 <caption>Depth 1 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td>HERO_ALLIN</td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
-<tr><td>HERO_BET40</td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
-<tr><td>HERO_BET100</td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
-<tr><td>HERO_CHECK</td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
+<tr><td><code>HERO_ALLIN</code></td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
+<tr><td><code>HERO_BET40</code></td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
+<tr><td><code>HERO_BET100</code></td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
+<tr><td><code>HERO_CHECK</code></td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-2">
@@ -282,10 +298,10 @@ The model was able to retain a decent amount of strategy compared to the solver.
 <div class="table-scroll"><table>
 <caption>Depth 2 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td>HERO_FOLD</td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
-<tr><td>HERO_ALLIN</td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
-<tr><td>HERO_CALL</td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
-<tr><td>HERO_RAISE_3X</td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
+<tr><td><code>HERO_FOLD</code></td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
+<tr><td><code>HERO_ALLIN</code></td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
+<tr><td><code>HERO_CALL</code></td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
+<tr><td><code>HERO_RAISE_3X</code></td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-3">
@@ -294,8 +310,8 @@ The model was able to retain a decent amount of strategy compared to the solver.
 <div class="table-scroll"><table>
 <caption>Depth 3 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td>HERO_CALL</td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
-<tr><td>HERO_FOLD</td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
+<tr><td><code>HERO_CALL</code></td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
+<tr><td><code>HERO_FOLD</code></td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-4">
@@ -304,8 +320,8 @@ The model was able to retain a decent amount of strategy compared to the solver.
 <div class="table-scroll"><table>
 <caption>Depth 2 (paired flop) action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td>HERO_FOLD</td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
-<tr><td>HERO_CALL</td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
+<tr><td><code>HERO_FOLD</code></td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
+<tr><td><code>HERO_CALL</code></td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
 </table></div>
 </div>
 </section>
