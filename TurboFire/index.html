@@ -30,23 +30,23 @@
 <header>
 <h1>Training a Transformer Model on Poker Solver Output for Fun and (No) Profit</h1>
 <p><i>Is bluffing aligned behavior?</i></p>
-<em><time datetime="2026-11-19">November 19, 2026</time></em><hr>
+<em><time datetime="2026-11-20">November 20, 2026</time></em><hr>
 </header>
 
 <h2 id="introduction">Introduction</h2><hr>
 
 <p>
-Poker play is considered game theory optimal when the players converge to a strategy which is not exploitable, meaning no deviation in strategy will provide an advantage to any player. An algorithm was discovered many years ago which pits <em>P</em> players against each other, starting with an equal strategy for every action, and adjusting the chances of taking certain actions until reaching a state of non-exploitability known as <em>Nash equilibrium</em>. Commercial solvers hide the math and logic behind their products, which makes their services appear as black boxes that provide you with perfect strategy. Once we learn how the algorithm works and create our own solver, we can take the patterns in the output and create a transformer model out of them.
+Poker play is considered game theory optimal when the players converge to a strategy which is not exploitable, meaning no deviation in strategy will provide an advantage to any player. An algorithm was discovered many years ago which pits two players against each other, starting with an equal strategy for every action, and adjusting the chances of taking certain actions until reaching a state of non-exploitability known as <em>nash equilibrium</em>. Commercial solvers hide the math and logic behind their products, which makes their services appear as black boxes which provide you with a perfect strategy. Once we learn how the algorithm works and create our own solver, we can take the patterns in the output and create a transformer model out of them.
 </p>
 
 <h2 id="turbofire-and-nashgpt">TurboFire and NashGPT</h2><hr>
 
 <p>
-TurboFire is a game theory optimal poker solver written in C++. It has none of the creature comforts of a traditional poker solver, such as memory saving techniques or abilities to load custom ranges of hands for you or your opponent. The base project serves as a great foundation for research, and can be adapted for many different purposes, such as a transformer model. With a bit of work, the actual output of the perfect play of the poker solver could be stored as a large log file, and used to train a transformer model. NashGPT is the ~26M parameter model which was trained on the output of the solver, learning the concepts behind game theory optimal strategy in training.
+TurboFire is a game theory optimal poker solver written in C++. It has none of the creature comforts of a traditional poker solver, such as memory saving techniques or abilities to load custom ranges of hands for you or your opponent. The base project serves as a great foundation for research, and can be adapted for many different purposes, such as a transformer model. With a bit of work, the output of the poker solver’s strategy could be stored as a large log file, and used to train a transformer model. NashGPT is the ~26M parameter model which was trained on the output of the solver, learning the concepts behind game theory optimal strategy in training.
 </p>
 
 <p>
-If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around the article to your level of interest and expertise - the code for the solver is linked on the bottom. This entire post is human written :)
+If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around the article to your level of interest and expertise - the code for the solver is linked on the bottom. This post's content is entirely human written, with some formatting help :)
 </p>
 
 <h2 id="poker">Poker (Prologue)</h2><hr>
@@ -68,7 +68,7 @@ The dealer places three cards on the table, one at a time: <code>9 of Diamonds, 
 </p>
 
 <p>
-You bet $3 into the pot. Your opponent freezes and quickly adds $9 on top, a <em>raise.</em> You think for a few seconds - and announce you’re <em>calling</em>, and slide $6 into the pot in the middle. The dealer announces <em>“flip ‘em”</em>. You’re playing a modified version of poker which stops at the <em>flop</em> (the first set of cards revealed by the dealer) to save time. Normally, there would be 2 more betting rounds, with 2 more cards revealed, known as the <i>turn</i> and <i>river</i>.
+You bet $3 into the pot. Your opponent freezes and quickly adds $9 into the pot, a <em>raise.</em> You think for a few seconds - and announce you’re <em>calling</em>, and slide $6 into the pot in the middle. The dealer announces <em>“flip ‘em”</em>. You’re playing a modified version of poker which stops at the <em>flop</em> (the first set of cards revealed by the dealer) to save time. Normally, there would be 2 more betting rounds, with 2 more cards revealed, known as the <i>turn</i> and <i>river</i>.
 </p>
 
 <p>
@@ -91,7 +91,7 @@ A few hours later, after bluffing to win a hand while discussing double-digit mo
 <h2 id="perfect-poker">Perfect Poker</h2><hr>
 
 <p>
-Fast forward a few decades, and there are algorithms at your disposal that will automate this learning process. The algorithm only knows the rules of the game, and through a method known as <em>Regret Minimization</em>, a perfect strategy can be found by both players. In the solver discussed in this post, the full algorithm is known as <em>Discounted Counterfactual Regret Minimization, or DCFR</em> <a href="#reference-dcfr" aria-label="Reference 1">[1]</a>.
+Fast forward a few decades, and there are algorithms at your disposal that will automate this learning process. The algorithm only knows the rules of the game, and through a method known as <em>Regret Minimization</em>, strategies that reach equilibrium can be found for both players. In the solver discussed in this post, the full algorithm is known as <em>Discounted Counterfactual Regret Minimization, or DCFR</em> <a href="#reference-dcfr" aria-label="Reference 1">[1]</a>.
 </p>
 
 <p>
@@ -109,11 +109,11 @@ In poker solvers, a game is defined as a game tree, where each action (check, be
 </p>
 
 <p>
-Every action is equally weighted, for both the hero and the villain, at the start of the hand. If your possible options are <em>check</em>,<em> call, raise $3,</em> or <em>raise $6</em>, the default strategy requires each one to be taken ¼ of the time. At the terminal node, you calculate your counterfactual value (CFV) for each possible hand in your <em>range</em> (all hands you could be holding) against your opponent's range. Meaning, you see how well your two aces would hold up against all of the possible hands your opponent could be holding, alongside a given board state.
+Every action is equally weighted, for both the hero and the villain, at the start of the hand. If your possible options are <em>fold</em>, <em>call</em>, <em>raise to $3</em>, or <em>raise to $6</em>, the default strategy requires each one to be taken ¼ of the time. At the terminal node, you calculate your counterfactual value (CFV) for each possible hand in your <em>range</em> (all hands you could be holding) against your opponent's range. Meaning, you see how well your two aces would hold up against all of the possible hands your opponent could be holding, alongside a given board state.
 </p>
 
 <p>
-Once your CFV for the terminal node is calculated, you return the vector of values to the previous node. The goal is to see how choosing a specific action (such as check or raise) holds up against the<em> strategy weighted CFV </em>of the node. Your strategy is how likely you were to take an action (¼ to start over 4 actions, in the previous example) and the CFV for each action is weighted against the strategy for that subsequent node.
+Once your CFV for the terminal node is calculated, you return the vector of values to the previous node. The goal is to see how choosing a specific action (such as fold or raise) holds up against the<em> strategy weighted CFV </em>of the node. Your strategy is how likely you were to take an action (¼ to start over 4 actions, in the previous example) and the CFV for each action is weighted against the strategy for that subsequent node.
 </p>
 
 <p>
@@ -121,7 +121,7 @@ Once your CFV for the terminal node is calculated, you return the vector of valu
 </p>
 
 <p>
-Imagine you accumulated -2 regret from checking, 3 regret from calling, 2 from raising $3, and -1 from raising $6. You can throw out the regrets that are negative, as those are actions you wish you didn’t take<em> (remember that regret is more like FOMO!)</em> and the positive regret is summed. 3 regret from calling + 2 regret from raising $3, equals 5 total. Then, the strategy is calculated for each action, taking the individual action’s regret and dividing it against the total regret. We would be met with a strategy profile of<em> 0% check, 60% call, 40% raise $3,</em> and <em>0% raise $6</em>.
+Imagine you accumulated -2 regret from folding, 3 regret from calling, 2 from raising to $3, and -1 from raising to $6. You can throw out the regrets that are negative, as those are actions you wish you didn’t take<em> (remember that regret is more like FOMO!)</em> and the positive regret is summed. 3 regret from calling + 2 regret from raising to $3, equals 5 total. Then, the strategy is calculated for each action, taking the individual action’s regret and dividing it against the total regret. We would be met with a strategy profile of<em> 0% fold, 60% call, 40% raise to $3,</em> and <em>0% raise to $6</em>.
 </p>
 
 <p>
@@ -154,7 +154,7 @@ One of the most common phrases heard in AI-related debates is that an LLM is a n
 </p>
 
 <p>
-A token is the tip of an iceberg, an abstract representation of countless entries which hold many concepts within its high dimensional space. As it flows down through the many layers of the model, certain neurons light up based on the context provided by the other tokens.
+A token the tip of an iceberg, a  symbol mapped to a vector called an <i>embedding</i>. As it flows through the layers of the model, it becomes a contextual hidden state, and certain neurons light up based on the context provided by the other tokens.
 </p>
 
 <h2 id="nashgpt-i">NashGPT (Implementation)</h2><hr>
@@ -174,13 +174,13 @@ For NashGPT, a small token set was defined alongside a distribution of the proba
 }</pre>
 
 <p>
-By running similar hands (flushes, one-pair hands, etc.) through the model, certain correlates between neurons will appear. General board texture can be learned (monotone vs rainbow flops) or general responses to certain actions by an opponent. These are all held within the same 512 dimensions of the last token, showing a token’s many contexts allows for the learning of abstract concepts.
+By running similar hands (flushes, one-pair hands, etc.) through the model, certain correlates between neurons will appear. General board texture can be learned (monotone vs rainbow flops) or general responses to certain actions by an opponent. These can be represented within the same 512 dimensions of the final hidden state at the last token’s position, holding abstract poker concepts that we understand as humans.
 </p>
 
 <h2 id="training">Training</h2><hr>
 
 <p>
-It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them NashGPT 1.0 <a href="#reference-nashgpt-1" aria-label="Reference 5">[5]</a>, 1.5, 1.6 <a href="#reference-nashgpt-16" aria-label="Reference 6">[6]</a> and 1.7. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (i.e., <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
+It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them NashGPT 1.0, 1.5, 1.6 and 1.7. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (i.e., <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
 </p>
 
 <p>
@@ -192,7 +192,7 @@ Unfortunately I still managed to overfit the model, as I did not include a rando
 </p>
 
 <p>
-NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The NashGPT 1.6 results <a href="#reference-nashgpt-16" aria-label="Reference 6">[6]</a> compare fresh solver output against canonical and non-canonical model inputs.
+NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The NashGPT 1.6 results compare fresh solver output against canonical and non-canonical model inputs.
 </p>
 
 <p>
@@ -202,14 +202,14 @@ The final version, NashGPT 1.7, separated out suits and the rank from the tokens
 <h2 id="learned-concepts">Learned Concepts</h2><hr>
 
 <p>
-It’s possible to see how well a model learned a certain concept. For example, in a regular language model, if we pass in the phrase <em>“I’m going to order a cheesesteak”</em> and various other sentences referencing the word cheesesteak, we can see what neurons are activated surrounding the token or within the token. These concepts likely relate to the actual word, alongside food or potentially hunger.
+It’s possible to see how well a model learned a certain concept. For example, in a regular language model, if we pass in the phrase <em>“I’m going to order a cheesesteak”</em> and various other sentences referencing the word cheesesteak, we can see which neurons activate as the model processes those tokens. These concepts likely relate to the actual word, alongside food or potentially hunger.
 </p>
 
 <p>
-Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream for the <em>&lt;BETTING&gt;</em> token. If certain neurons keep lighting up, then we know it managed to learn a concept!
+Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream at the <code>&lt;BETTING&gt;</code> token’s position. If certain neurons keep lighting up, then we know it managed to learn a concept!
 </p>
 
-<h2 id="influenced-by-lyra">Influenced by Lyra</h2><hr>
+<h2 id="influenced-by-lyra">Influence from Lyra</h2><hr>
 
 <p>
 Because of the model’s small size, we can very easily peek inside and visualize these shared concepts. Using a similar concept to Lyra’s Neuron Explorer <a href="#reference-neuron-explorer" aria-label="Reference 3">[3]</a>, we can visualize how these connected concepts flow throughout the layers:
@@ -238,7 +238,7 @@ The model was able to retain a decent amount of strategy compared to the solver.
 </p>
 
 <p>
-First, transformers are able to hold much more complex information than just the face value of the token shown to the user. <em>&lt;BETTING&gt;</em> doesn't just tell the model to produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, they can seemingly represent emotions <a href="#reference-emotion-concepts" aria-label="Reference 7">[7]</a> and understand the patterns of languages they're translating, both natural and programming.
+First, transformers are able to hold much more complex information than just the face value of the token shown to the user. The final hidden state the position of <em>&lt;BETTING&gt;</em> doesn't just help the model produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, they can seemingly represent emotions <a href="#reference-emotion-concepts" aria-label="Reference 4">[4]</a> and understand the patterns of languages they're translating, both natural and programming.
 </p>
 
 <p>
@@ -250,7 +250,7 @@ Finally, scaling models is incredibly expensive. Each training run only cost me 
 </p>
 
 <p>
-Before concluding, here are some examples taken from the NashGPT 1.6 <a href="#reference-nashgpt-16" aria-label="Reference 6">[6]</a> run:
+Before concluding, here are some examples taken from the NashGPT 1.6 run:
 </p>
 
 <section id="solver-results" aria-labelledby="results-heading">
@@ -321,18 +321,10 @@ Before concluding, here are some examples taken from the NashGPT 1.6 <a href="#r
 </div>
 </section>
 
-<h2 id="why">Why?</h2><hr>
+<h2 id="why">Thank You!</h2><hr>
 
 <p>
-In December 2025 I had reached a unique situation in my college career. Drexel, my alma mater <em>(go dragons!) </em>would not let me graduate without taking a senior seminar, and I had no other credits to take. For six months, while waiting for graduation, I had the privilege of time to work on various projects across different domains while having to dedicate only a few hours a week to a single class.
-</p>
-
-<p>
-I played a lot of poker in college, and wanted to learn how solvers work. Due to the explosion in LLM usage due to the rise of capable agents around the same time, I attempted to learn as much as I could about LLMs with no background in machine learning. While learning about both, it seemed that a transformer model could be trained on anything, including poker solver output!
-</p>
-
-<p>
-Almost a year later, I tried to compile the story of the journey I had taken to create these projects. The final C++ version of the solver was written with minimal LLM input after many iterations as a way to properly learn the algorithm after LLM-assisted iterations. The transformer model has much more assistance from AI. It was a fun experience, and although I am still no expert in any domain I had crossed, I had an incredible time with the process. The TurboFire repo <a href="#reference-turbofire" aria-label="Reference 4">[4]</a> is at the bottom, and I am still in the process of finding a proper way to host the model and the code surrounding it.
+ Thank you for reading! The final C++ version of the solver was written with minimal LLM input after many iterations as a way to properly learn the algorithm after LLM-assisted iterations. The transformer model has much more assistance from AI. It was a fun experience, and although I am still no expert in any domain I had crossed, I had an incredible time with the process. The TurboFire source<a href="#reference-turbofire" aria-label="Reference 5">[5]</a> is available at the bottom of the page, and I am still in the process of finding a proper way to host the model and the code surrounding it.
 </p>
 
 <h2 id="references">References</h2><hr>
@@ -341,10 +333,8 @@ Almost a year later, I tried to compile the story of the journey I had taken to 
 <li id="reference-dcfr">Noam Brown and Tuomas Sandholm. <a href="https://arxiv.org/abs/1809.04040"><em>Solving Imperfect-Information Games via Discounted Regret Minimization</em></a>. 2019. <a href="https://arxiv.org/pdf/1809.04040">Read the paper (PDF)</a>.</li>
 <li id="reference-range-morphology">GTO Wizard. <a href="https://blog.gtowizard.com/range-morphology/"><em>Range Morphology</em></a>. Range image reproduced above via the original image URL.</li>
 <li id="reference-neuron-explorer">Lyra. <a href="https://github.com/lyramakesmusic/neuron-explorer">Neuron Explorer</a>.</li>
-<li id="reference-turbofire">Nick Ingravallo. <a href="https://github.com/nickingravallo/TurboFire">TurboFire source code</a>.</li>
-<li id="reference-nashgpt-1">Nick Ingravallo. <a href="../Random/20260731/index.html"><em>NashGPT 1.0</em></a>.</li>
-<li id="reference-nashgpt-16">Nick Ingravallo. <a href="../Random/20260824/index.html"><em>NashGPT 1.6</em></a>.</li>
 <li id="reference-emotion-concepts">Anthropic. <a href="https://www.anthropic.com/research/emotion-concepts-function"><em>Emotion concepts in language models</em></a>.</li>
+<li id="reference-turbofire">Myself. <a href="https://github.com/nickingravallo/TurboFire">TurboFire source code</a>.</li>
 </ol>
 <hr>
 <p style="text-align: center;"><i><a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=hyVVoLy4LScM&amp;start_radio=1">(it's going down)</a></i></p>
