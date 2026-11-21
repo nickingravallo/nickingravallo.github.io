@@ -184,7 +184,7 @@ It took four pre-train runs to get the model into a usable state. I have two art
 </p>
 
 <p>
-NashGPT 1.5 was a slight improvement - twice the amount of training data with half the amount of parameters. The concept of hand isomorphism was introduced, where duplicate hands that are represented identically were removed in order to attempt to learn the concepts rather than accidentally <em>overfitting</em> to the training data, or memorizing the answers. Two examples would be the following flops (<code>&lt;HOLE&gt; 7c 2c &lt;FLOP&gt; As Qh 7s</code>) and (<code>&lt;HOLE&gt; 7d 2d &lt;FLOP&gt; Ac Qs 7c</code>). Although different suits are used, they are isomorphic in the type of board that is represented.
+NashGPT 1.5 was a slight improvement - twice the amount of training data with half the amount of parameters. The concept of hand isomorphism was introduced, where duplicate hands that are represented identically were removed in order to attempt to learn the concepts rather than accidentally <em>overfitting</em> to the training data, or memorizing the answers. Two examples would be the following flops (<code>&lt;HOLE&gt; 7c 2c &lt;FLOP&gt; As Qh 7s</code>) and (<code>&lt;HOLE&gt; 7d 2d &lt;FLOP&gt; Ac Qs 7c</code>). Although different suits are used, they are isomorphic in the type of board that is represented. Isomorphic hands are given a single representation, known as the canonical hand, which is what is fed into the model.
 </p>
 
 <p>
@@ -251,7 +251,7 @@ Finally, scaling models is incredibly expensive. Each training run only cost me 
 
 <section id="solver-results" aria-labelledby="results-heading">
 <h2 id="results-heading">NashGPT 1.7 Results</h2><hr>
-<p>Each table shows how often the solver and NashGPT 1.7 choose an action. The non-canonical predictions use the suits shown in the prompt. The canonical predictions use the same hand with its suits relabeled into a standard order.</p>
+<p>Each table shows how often the solver and NashGPT 1.7 choose an action. The non-canonical predictions use the suits shown in the prompt.</p>
 <div class="result-controls" hidden aria-label="Choose a poker scenario">
 <button type="button" data-spot="0" aria-controls="spot-0" aria-pressed="true">Depth 0</button>
 <button type="button" data-spot="1" aria-controls="spot-1" aria-pressed="false">Depth 1</button>
