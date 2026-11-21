@@ -8,7 +8,6 @@
     body { font-family: Helvetica, Arial, sans-serif; width: 60%; padding: 50px; margin: auto; font-size: 17px; }
     code { font-size: 14px; overflow-wrap: anywhere; }
     pre { font-size: 12px; overflow-x: auto; }
-    pre code { overflow-wrap: normal; }
     header { text-align: center; }
     table { border-collapse: collapse; margin: 1em 0; }
     table, th, td { border: 1px solid black; }
@@ -26,7 +25,7 @@
 </head>
 <body>
 <main>
-<nav aria-label="Home"><code><a target="_blank" rel="noopener noreferrer" href="../index.html">&lt; back</a></code></nav><hr>
+<nav aria-label="Home"><em><a target="_blank" rel="noopener noreferrer" href="../index.html">&lt; back</a></em></nav><hr>
 <article>
 <header>
 <h1>Training a Transformer Model on Poker Solver Output for Fun and (No) Profit</h1>
@@ -37,27 +36,31 @@
 <h2 id="introduction">Introduction</h2><hr>
 
 <p>
-Poker play is considered game theory optimal when the players converge to a strategy which is not exploitable, meaning no deviation in strategy will provide any advantage to any player. An algorithm was discovered many years ago which pits <em>P</em> players against each other, starting with an equal strategy for every action, and tweaking the chances of taking certain actions until reaching that state of non-exploitability known as <em>Nash equilibrium</em>. Commercial products hide the math and logic behind the solver, which leads the internals to appear as a black box that provides you with perfect strategy. Once we learn how the algorithm works and create our own solver, we can take the patterns in the output and create a transformer model out of them.
+Poker play is considered game theory optimal when the players converge to a strategy which is not exploitable, meaning no deviation in strategy will provide an advantage to any player. An algorithm was discovered many years ago which pits <em>P</em> players against each other, starting with an equal strategy for every action, and adjusting the chances of taking certain actions until reaching a state of non-exploitability known as <em>Nash equilibrium</em>. Commercial solvers hide the math and logic behind their products, which makes their services appear as black boxes that provide you with perfect strategy. Once we learn how the algorithm works and create our own solver, we can take the patterns in the output and create a transformer model out of them.
 </p>
 
-<h2 id="nashgpt-i">TurboFire and NashGPT</h2><hr>
+<h2 id="turbofire-and-nashgpt">TurboFire and NashGPT</h2><hr>
 
 <p>
-TurboFire is a game theory optimal poker solver written in C++. It has none of the creature comforts of a traditional poker solver, such as memory saving techniques or abilities to load custom ranges of hands for you or your opponent. The base project serves as a great foundation for a research, and can be adapted for many different purposes, such as a transformer model. With a bit of work, the actual output of the perfect play of the poker solver could be stored as a large log file, and trained on to create a transformer model. NashGPT is the ~26M parameter model which was trained on the output of the solver, learning the concepts behind game theory optimal strategy in training. 
+TurboFire is a game theory optimal poker solver written in C++. It has none of the creature comforts of a traditional poker solver, such as memory saving techniques or abilities to load custom ranges of hands for you or your opponent. The base project serves as a great foundation for research, and can be adapted for many different purposes, such as a transformer model. With a bit of work, the actual output of the perfect play of the poker solver could be stored as a large log file, and used to train a transformer model. NashGPT is the ~26M parameter model which was trained on the output of the solver, learning the concepts behind game theory optimal strategy in training.
 </p>
 
 <p>
 If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around the article to your level of interest and expertise - the code for the solver is linked on the bottom. This entire post is human written :)
 </p>
 
-<h2 id="poker">Poker</h2><hr>
+<h2 id="poker">Poker (Prologue)</h2><hr>
+
+<p>
+<center><em>Setting: A poker room in Las Vegas, Nevada - February 1982 </em></center>
+</p>
 
 <p>
 You and your opponent, the <em>villain</em>, arrive at the poker table. On the unsturdy poker table there’s a low-grade stench of Rolling Rock, and as you shuffle through the $100 in slightly discolored casino chips sitting in front of you, a few of the $1 chips stick together. The dealer sits down and you’re both dealt two cards.
 </p>
 
 <p>
-You have two Aces - an <em>Ace of Spades</em> and an <em>Ace of Diamonds</em>. The best hand in poker. Your opponent stares down at his cards, and their eyes dash over to their pile of chips, and they flick $2 in the middle. You match their bet. There’s $4 in the <em>pot</em>, or the collective amount you’ve both committed.
+You have two Aces - an <em>Ace of Spades</em> and an <em>Ace of Diamonds</em>. The best hand in poker. Your opponent stares down at their cards, and their eyes dash over to their pile of chips, and they flick $2 in the middle. You match their bet. There’s $4 in the <em>pot</em>, or the collective amount you’ve both committed.
 </p>
 
 <p>
@@ -65,7 +68,7 @@ The dealer places three cards on the table, one at a time: <code>9 of Diamonds, 
 </p>
 
 <p>
-You bet $3 into the pot. Your opponent freezes, and quickly adds $9 on top, a <em>raise.</em> You think for a few seconds - and announce you’re <em>calling</em>, and slide $6 into the pot in the middle. The dealer announces <em>“flip ‘em”</em>. You’re playing a modified version of poker which stops at the <em>flop</em> (the first set of cards revealed by the dealer) to save time. Normally, there would be 2 more betting rounds, with 2 more cards revealed, known as the turn and river.
+You bet $3 into the pot. Your opponent freezes and quickly adds $9 on top, a <em>raise.</em> You think for a few seconds - and announce you’re <em>calling</em>, and slide $6 into the pot in the middle. The dealer announces <em>“flip ‘em”</em>. You’re playing a modified version of poker which stops at the <em>flop</em> (the first set of cards revealed by the dealer) to save time. Normally, there would be 2 more betting rounds, with 2 more cards revealed, known as the <i>turn</i> and <i>river</i>.
 </p>
 
 <p>
@@ -73,43 +76,36 @@ You bet $3 into the pot. Your opponent freezes, and quickly adds $9 on top, a <e
 </p>
 
 <p>
-Your opponent slams their cards down: <em>King Hearts, 10 Diamonds. </em>You smile, and reveal your aces - your opponent made a pair, two Kings. Your two Aces, however, slightly outclass his pair of kings.
+Your opponent slams their cards down: <em>King Hearts, 10 Diamonds. </em>You smile, and reveal your aces - your opponent made a pair, two Kings. Your two Aces, however, slightly outclass their pair of kings.
 </p>
 
 <p>
-There’s some slight mumbling on the other side of the table involving expletives, ranges, fish. You’re unsure what free-range aquatic life has to do with poker, but there’s $22 sliding your way, and $11 of it your opponent's money.
+There’s some slight mumbling on the other side of the table involving expletives, ranges, fish. You’re unsure what free-range aquatic life has to do with poker, but there’s $22 sliding your way, and $11 of it is your opponent's money.
+</p>
+
+<p><i>...</i></p>
+<p>
+A few hours later, after bluffing to win a hand while discussing double-digit mortgage rates, someone at your table asks <em>“How did you know to bluff there?”</em> You think for a few seconds, and mention it was just a gut intuition. In your mind, however, you have a subconscious and abstract grouping of hands in each situation. Some hands, like two aces, cause you to shovel money into the pot. Mediocre hands, like King and Seven of two different suits, your opponent won’t see coming if you make a hand and play it aggressively.
 </p>
 
 <h2 id="perfect-poker">Perfect Poker</h2><hr>
 
 <p>
-When playing poker, certain strategies emerge as you play with your opponents. Sometimes you can bluff, and get your opponent to <em>fold</em>, or give up, by betting with hands that are likely worse than your opponents to force a victory. Other times, you try to raise and attempt to get your opponent to put extra money in the pot with a hand worse than the two you are holding.
+Fast forward a few decades, and there are algorithms at your disposal that will automate this learning process. The algorithm only knows the rules of the game, and through a method known as <em>Regret Minimization</em>, a perfect strategy can be found by both players. In the solver discussed in this post, the full algorithm is known as <em>Discounted Counterfactual Regret Minimization, or DCFR</em> <a href="#reference-dcfr" aria-label="Reference 1">[1]</a>.
 </p>
 
 <p>
-<em>Setting: A poker room in Las Vegas, Nevada - February 1982 </em>
+Regret within the algorithm is used slightly differently than in common vernacular. Regret should be read in this post as <em>“fear of missing out”</em> (FOMO) instead of a decision with negative consequences. Think along the lines of <em>“I regret not asking the professor for extra credit”</em>, where you look <em>counterfactually</em> to the path you didn't take with regret (FOMO) for not choosing it. It's called regret <i>minimization</i>, because you're trying to minimize your FOMO. You'll also be looking <i>counterfactually</i> across hands and actions you did not choose to see how those situations would have played out, counter to the fact that you did not choose them.
 </p>
 
 <p>
-After bluffing to win a hand while discussing double digit mortgage rates, someone at your table asks <em>“How did you know to bluff there?”</em> You think for a few seconds, and mention it was just a gut intuition. In your mind, however, you have a subconscious and abstract grouping of hands in each situation. Some hands, like two aces, cause you to shovel money into the pot. Mediocre hands, like King and Seven of two different suits, your opponent won’t see coming if you make a hand and play it aggressively.
-</p>
-
-<p>
-Over the years you lost a lot of money and accumulated countless regrets, but eventually came out with a strategy that seems to beat most opponents. It was a process of trial and error… and that trial and error process could possibly be automated by those fancy new computers you keep hearing in conversations.
-</p>
-
-<p>
-Fast forward a few decades, and there are algorithms at your disposal that will automate this process for you. The algorithm only knows the rules of the game, and through a method known as <em>Regret Minimization</em>, a perfect strategy can be found by both players. In the solver discussed in this post, the full algorithm is known as <em>Discounted Counterfactual Regret Minimization</em>.
-</p>
-
-<p>
-Regret within the algorithm is used slightly differently than in common vernacular. Regret should be read in this post as <em>“fear of missing out”</em> (FOMO) instead of a decision with negative consequences. Think along the lines of <em>“I regret not asking the professor for extra credit”</em>, where you look <em>counterfactually</em> to the path you didn't take with regret (FOMO) for not choosing it.
+Discounting requires a bit more context first!
 </p>
 
 <h2 id="dcfr">DCFR</h2><hr>
 
 <p>
-The algorithm used in the solver described in this blog post is <em>Discounted Counterfactual Regret  Minimization</em> <a target="_blank" rel="noopener noreferrer" href="#reference-dcfr" aria-label="Reference 1">[1]</a>. The poker game is defined as a game tree, where each action (check, bet, raise) creates a new branch from the root that grows outward. These are defined as action nodes. The game tree begins to explode as <em>chance nodes</em> are hit, which is when the environment affects the game state. In poker, the environment is a card being drawn from the deck at random. In order to accurately simulate a poker game, we must account for each card drawn from the deck, at both the turn and river, which is (49 choose 2) possible branches. The <em>terminal node</em> occurs when one player folds, or all possible actions end.
+In poker solvers, a game is defined as a game tree, where each action (check, bet, raise) creates a new branch from the root that grows outward. These are defined as action nodes. The game tree begins to explode as <em>chance nodes</em> are hit, which is when the environment affects the game state. In poker, the environment is a card being drawn from the deck at random. In order to accurately simulate a poker game, we must account for each card drawn from the deck, at both the turn and river, which is (49 choose 2) possible branches. The <em>terminal node</em> occurs when one player folds, or all possible actions end.
 </p>
 
 <p>
@@ -125,32 +121,32 @@ Once your CFV for the terminal node is calculated, you return the vector of valu
 </p>
 
 <p>
-Imagine you accumulated -2 regret from checking, 3 regret from calling, 2 from raising $3, and -1 raising $6. You can throw out the regrets that are negative, as those are actions you wish you didn’t take<em> (remember that regret is more like FOMO!)</em> and the positive regret is summed. 3 regret from calling + 2 regret from raising $3, equals 5 total. Then, the strategy is calculated for each action, taking the individual action’s regret and dividing it against the total regret. We would be met with a strategy profile of<em> 0% check, 60% call, 40% raise $3,</em> and <em>0% raise $6</em>.
+Imagine you accumulated -2 regret from checking, 3 regret from calling, 2 from raising $3, and -1 from raising $6. You can throw out the regrets that are negative, as those are actions you wish you didn’t take<em> (remember that regret is more like FOMO!)</em> and the positive regret is summed. 3 regret from calling + 2 regret from raising $3, equals 5 total. Then, the strategy is calculated for each action, taking the individual action’s regret and dividing it against the total regret. We would be met with a strategy profile of<em> 0% check, 60% call, 40% raise $3,</em> and <em>0% raise $6</em>.
 </p>
 
 <p>
-Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/range-morphology/">this article by GTO Wizard</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
+Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From this article by GTO Wizard <a href="#reference-range-morphology" aria-label="Reference 2">[2]</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
 </p>
 
 <figure>
 <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200"><img src="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200" alt="GTO Wizard poker range chart illustrating aggressive hands and bluffs." loading="lazy"></a>
-<figcaption>Credit: <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/range-morphology/">GTO Wizard — Range Morphology</a>. <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200">View original image</a>.</figcaption>
+<figcaption>Credit: GTO Wizard — Range Morphology <a href="#reference-range-morphology" aria-label="Reference 2">[2]</a>. <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/content/2026/03/range-morphology-image-6.png?w=1200">View original image</a>.</figcaption>
 </figure>
 
 <h2 id="discounting">Discounting</h2><hr>
 
 <p>
-The last part of the algorithm is the <em>D</em> in DCFR, which refers to <em>discount</em>. The algorithm can learn incorrect biases very early on in the training cycle, which can take a very long time to train out. By discounting earlier runs, it can help mitigate a scenario with a large regret dominating future strategies, such as an initial 500,000 regret accumulation for a check and 1 regret for raising $3. The discounting is applied after each iteration, with multiple variables for calculating decay. The <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1809.04040">paper describing the algorithm</a> is linked at the bottom of the page!
+The last part of the algorithm is the <em>D</em> in DCFR, which refers to <em>discount</em>. The algorithm can learn incorrect biases very early on in the training cycle, which can take a very long time to train out. By discounting earlier runs, it can help mitigate a scenario with a large regret dominating future strategies, such as an initial 500,000 regret accumulation for a check and 1 regret for raising $3. The discounting is applied after each iteration, with multiple variables for calculating decay. The paper describing the algorithm <a href="#reference-dcfr" aria-label="Reference 1">[1]</a> is linked at the bottom of the page!
 </p>
 
 <h2 id="transformer-models">Transformer Models</h2><hr>
 
 <p>
-<em>(Author’s note: I am not an AI researcher, and self taught the concepts listed below using the  internet and AI. If anything is incorrect or misstated - feedback is appreciated!) </em>
+<em>(Author’s note: I am not an AI researcher, and taught myself the concepts listed below using the internet and AI. If anything is incorrect or misstated - feedback is appreciated!) </em>
 </p>
 
 <p>
-Think back earlier to the description of the hand in the Las Vegas casino. Over time, you realize there’s patterns in optimal strategy, and there are certain opportunities where bluffing your hand and playing aggressively tends to pay off. These patterns emerged inside of DCFR, and can be learned to obtain a personal GTO-like strategy. If a human is able to learn these strategies, so can a transformer model. Although this may not be the most optimal way to build an AI to play poker, it’s fun and an excellent educational experience.
+Think back earlier to the description of the hand in the Las Vegas casino. Over time, you realize there are patterns in optimal strategy, and there are certain opportunities where bluffing your hand and playing aggressively tends to pay off. These patterns emerged inside of DCFR, and can be learned to obtain a personal GTO-like strategy. If a human is able to learn these strategies, so can a transformer model. Although this may not be the most optimal way to build an AI to play poker, it’s fun and an excellent educational experience.
 </p>
 
 <p>
@@ -164,10 +160,10 @@ A token is the tip of an iceberg, an abstract representation of countless entrie
 <h2 id="nashgpt-i">NashGPT (Implementation)</h2><hr>
 
 <p>
-For NashGPT, a small token set was defined alongside a distribution of the probability of actions represented as tokens used for the model’s training. We start with defined <code>&lt;START&gt;</code> and <code>&lt;HOLE&gt;</code> tokens (the hole cards being our cards) alongside the flop, and the subsequent actions taken by the players. The next token to be predicted is either a hero’s action, or a villain’s response. In the below example, we have a two-tone (two suits) flop with a mediocre hand. The model will train off the distributions of the possible actions with bias towards the higher values. With time and energy, the concepts hidden within these lines of training data are learned.
+For NashGPT, a small token set was defined alongside a distribution of the probability of actions represented as tokens used for the model’s training. We start with defined <em>&lt;START&gt;</em> and <em>&lt;HOLE&gt;</em> tokens (the hole cards being our cards) alongside the flop, and the subsequent actions taken by the players. The next token to be predicted is either a hero’s action, or a villain’s response. In the below example, we have a two-tone (two suits) flop with a mediocre hand. The model will train off the distributions of the possible actions with bias towards the higher values. With time and energy, the concepts hidden within these lines of training data are learned.
 </p>
 
-<pre><code>{
+<pre>{
   &quot;prompt&quot;: &quot;&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;&quot;,
   &quot;action_probs&quot;: {
     &quot;HERO_CHECK&quot;: 0.96824,
@@ -175,20 +171,20 @@ For NashGPT, a small token set was defined alongside a distribution of the proba
     &quot;HERO_BET100&quot;: 0.005142,
     &quot;HERO_ALLIN&quot;: 0.022982
   }
-}</code></pre>
+}</pre>
 
 <p>
-By running similar hands (flushes, one-pairs, etc) through the model, certain correlates between neurons will appear. General board texture can be learned (monotone vs rainbow flops) or general responses to certain actions by an opponent. These are all held within the same 512 dimensions of the last token, showing a token’s many contexts allows for the learning of abstract concepts.
+By running similar hands (flushes, one-pair hands, etc.) through the model, certain correlates between neurons will appear. General board texture can be learned (monotone vs rainbow flops) or general responses to certain actions by an opponent. These are all held within the same 512 dimensions of the last token, showing a token’s many contexts allows for the learning of abstract concepts.
 </p>
 
 <h2 id="training">Training</h2><hr>
 
 <p>
-It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them <a target="_blank" rel="noopener noreferrer" href="../Random/20260731/index.html">NashGPT 1.0</a>, 1.5, <a target="_blank" rel="noopener noreferrer" href="../Random/20260824/index.html">1.6</a> and 1.7, which is described within this article. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (ie <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
+It took four pre-train runs to get the model into a usable state. I have two articles explaining the differences between each iteration. I named each of them NashGPT 1.0 <a href="#reference-nashgpt-1" aria-label="Reference 5">[5]</a>, 1.5, 1.6 <a href="#reference-nashgpt-16" aria-label="Reference 6">[6]</a> and 1.7. The first version was sloppy - I did not separate suits and ranks as I should have, which caused the model to have a difficult time learning concepts such as rainbow or monotone flops. (i.e., <code>&lt;FLOP&gt; As Qh 7s</code>). It was originally double the size, at around ~57M parameters, which was far too large for the amount of data that we were providing. It also cut off many hands, and did not include any compression techniques.
 </p>
 
 <p>
-NashGPT 1.5 was a slight improvement - twice the amount of training data with half the amount of parameters. The concept of hand isomorphism was introduced, where duplicate hands that are represented identically were removed in order to attempt to learn the concepts rather than accidentally <em>overfitting</em> to the training data, or memorizing the answers. Two examples would be the following flops (<code>&lt;HOLE&gt; 7c 2c &lt;FLOP&gt; As Qh 7s</code>) and (<code>&lt;HOLE&gt; 7d 2d &lt;FLOP&gt; Ac Qs 7c</code>) . Although different suits are used, they are isomorphic in the type of board that is represented.
+NashGPT 1.5 was a slight improvement - twice the amount of training data with half the amount of parameters. The concept of hand isomorphism was introduced, where duplicate hands that are represented identically were removed in order to attempt to learn the concepts rather than accidentally <em>overfitting</em> to the training data, or memorizing the answers. Two examples would be the following flops (<code>&lt;HOLE&gt; 7c 2c &lt;FLOP&gt; As Qh 7s</code>) and (<code>&lt;HOLE&gt; 7d 2d &lt;FLOP&gt; Ac Qs 7c</code>). Although different suits are used, they are isomorphic in the type of board that is represented.
 </p>
 
 <p>
@@ -196,7 +192,7 @@ Unfortunately I still managed to overfit the model, as I did not include a rando
 </p>
 
 <p>
-NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The <a target="_blank" rel="noopener noreferrer" href="../Random/20260824/index.html">NashGPT 1.6 results</a> compare fresh solver output against canonical and non-canonical model inputs.
+NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The NashGPT 1.6 results <a href="#reference-nashgpt-16" aria-label="Reference 6">[6]</a> compare fresh solver output against canonical and non-canonical model inputs.
 </p>
 
 <p>
@@ -210,13 +206,13 @@ It’s possible to see how well a model learned a certain concept. For example, 
 </p>
 
 <p>
-Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream for the <code>&lt;BETTING&gt;</code> token. If certain neurons keep lighting up, then we know it managed to learn a concept!
+Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream for the <em>&lt;BETTING&gt;</em> token. If certain neurons keep lighting up, then we know it managed to learn a concept!
 </p>
 
 <h2 id="influenced-by-lyra">Influenced by Lyra</h2><hr>
 
 <p>
-Because of the model’s small size, we can very easily peek inside and visualize these shared concepts. Using a similar concept to <a target="_blank" rel="noopener noreferrer" href="https://github.com/lyramakesmusic/neuron-explorer">Lyra’s Neuron Explorer</a>, we can visualize how these connected concepts flow throughout the layers:
+Because of the model’s small size, we can very easily peek inside and visualize these shared concepts. Using a similar concept to Lyra’s Neuron Explorer <a href="#reference-neuron-explorer" aria-label="Reference 3">[3]</a>, we can visualize how these connected concepts flow throughout the layers:
 </p>
 
 <figure>
@@ -229,7 +225,7 @@ Because of the model’s small size, we can very easily peek inside and visualiz
 </p>
 
 <p>
-Patterns in poker that are natural to humans are picked up by the model. There are certain activations associated with a previous player raising, or calling, or any general action. In the above picture, the model was able to discern against a monotone flop from a rainbow flop (<code>As Qs 7s</code> vs <code>Ah Qd 7s</code>) for example, and in the picture below the concept of two suited hole cards are highlighted.
+Patterns in poker that are natural to humans are picked up by the model. There are certain activations associated with a previous player raising, or calling, or any general action. In the above picture, the model was able to distinguish a monotone flop from a rainbow flop (<code>As Qs 7s</code> vs <code>Ah Qd 7s</code>) for example, and in the picture below the concept of two suited hole cards is highlighted.
 </p>
 
 <figure>
@@ -238,11 +234,11 @@ Patterns in poker that are natural to humans are picked up by the model. There a
 </figure>
 
 <p>
-The model was able to retain a decent amount of strategy compared to the solver. These observations show a highlight a few important items. 
+The model was able to retain a decent amount of strategy compared to the solver. These observations highlight a few important items.
 </p>
 
 <p>
-First, transformers are able to hold much more complex information than just the face value of the token shown to the user. <code>&lt;BETTING&gt;</code> doesn't just tell the model to produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, <a target="_blank" rel="noopener noreferrer" href="https://www.anthropic.com/research/emotion-concepts-function">they can seemingly represent emotions</a> and understand the patterns of languages they're translating, both natural and programming.
+First, transformers are able to hold much more complex information than just the face value of the token shown to the user. <em>&lt;BETTING&gt;</em> doesn't just tell the model to produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, they can seemingly represent emotions <a href="#reference-emotion-concepts" aria-label="Reference 7">[7]</a> and understand the patterns of languages they're translating, both natural and programming.
 </p>
 
 <p>
@@ -250,11 +246,11 @@ Second, transformer models seem to act as some form of compression. It was seen 
 </p>
 
 <p>
-Finally, scaling models is incredibly expensive. Each training run only had cost me a few dollars on an Nvidia A40, but had I added turn and river data into the mix, the training run would have gotten incredibly expensive. Holding all of the training data (potentially terrabytes worth) would have been expensive on its own, without the VRAM required for training the model on each street!
+Finally, scaling models is incredibly expensive. Each training run only cost me a few dollars on an Nvidia A40, but had I added turn and river data into the mix, the training run would have gotten incredibly expensive. Holding all of the training data (potentially terabytes worth) would have been expensive on its own, without the VRAM required for training the model on each street!
 </p>
 
 <p>
-Before concluding, here are some examples taken from the<a target="_blank" rel="noopener noreferrer" href="../Random/20260824/index.html">NashGPT 1.6</a> run:
+Before concluding, here are some examples taken from the NashGPT 1.6 <a href="#reference-nashgpt-16" aria-label="Reference 6">[6]</a> run:
 </p>
 
 <section id="solver-results" aria-labelledby="results-heading">
@@ -273,10 +269,10 @@ Before concluding, here are some examples taken from the<a target="_blank" rel="
 <div class="table-scroll"><table>
 <caption>Depth 0 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><code>HERO_CHECK</code></td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
-<tr><td><code>HERO_ALLIN</code></td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
-<tr><td><code>HERO_BET100</code></td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
-<tr><td><code>HERO_BET40</code></td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
+<tr><td><em>HERO_CHECK</em></td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
+<tr><td><em>HERO_ALLIN</em></td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
+<tr><td><em>HERO_BET100</em></td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
+<tr><td><em>HERO_BET40</em></td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-1">
@@ -285,10 +281,10 @@ Before concluding, here are some examples taken from the<a target="_blank" rel="
 <div class="table-scroll"><table>
 <caption>Depth 1 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><code>HERO_ALLIN</code></td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
-<tr><td><code>HERO_BET40</code></td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
-<tr><td><code>HERO_BET100</code></td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
-<tr><td><code>HERO_CHECK</code></td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
+<tr><td><em>HERO_ALLIN</em></td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
+<tr><td><em>HERO_BET40</em></td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
+<tr><td><em>HERO_BET100</em></td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
+<tr><td><em>HERO_CHECK</em></td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-2">
@@ -297,10 +293,10 @@ Before concluding, here are some examples taken from the<a target="_blank" rel="
 <div class="table-scroll"><table>
 <caption>Depth 2 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><code>HERO_FOLD</code></td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
-<tr><td><code>HERO_ALLIN</code></td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
-<tr><td><code>HERO_CALL</code></td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
-<tr><td><code>HERO_RAISE_3X</code></td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
+<tr><td><em>HERO_FOLD</em></td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
+<tr><td><em>HERO_ALLIN</em></td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
+<tr><td><em>HERO_CALL</em></td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
+<tr><td><em>HERO_RAISE_3X</em></td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-3">
@@ -309,8 +305,8 @@ Before concluding, here are some examples taken from the<a target="_blank" rel="
 <div class="table-scroll"><table>
 <caption>Depth 3 action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><code>HERO_CALL</code></td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
-<tr><td><code>HERO_FOLD</code></td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
+<tr><td><em>HERO_CALL</em></td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
+<tr><td><em>HERO_FOLD</em></td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-4">
@@ -319,8 +315,8 @@ Before concluding, here are some examples taken from the<a target="_blank" rel="
 <div class="table-scroll"><table>
 <caption>Depth 2 (paired flop) action probabilities</caption>
 <tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><code>HERO_FOLD</code></td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
-<tr><td><code>HERO_CALL</code></td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
+<tr><td><em>HERO_FOLD</em></td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
+<tr><td><em>HERO_CALL</em></td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
 </table></div>
 </div>
 </section>
@@ -336,16 +332,19 @@ I played a lot of poker in college, and wanted to learn how solvers work. Due to
 </p>
 
 <p>
-Almost a year later, I tried to compile the story of the journey I had taken to create these projects. The final C++ version of the solver was written with minimal LLM input after many iterations as a way to properly learn the algorithm after LLM-assisted iterations. The transformer model has much more assistance from AI. It was a fun experience, and although I am still no expert in any domain I had crossed, I had an incredible time with the process. The TurboFire repo is at the bottom, and I am still in the process of finding a proper way to host the model and the code surrounding it.
+Almost a year later, I tried to compile the story of the journey I had taken to create these projects. The final C++ version of the solver was written with minimal LLM input after many iterations as a way to properly learn the algorithm after LLM-assisted iterations. The transformer model has much more assistance from AI. It was a fun experience, and although I am still no expert in any domain I had crossed, I had an incredible time with the process. The TurboFire repo <a href="#reference-turbofire" aria-label="Reference 4">[4]</a> is at the bottom, and I am still in the process of finding a proper way to host the model and the code surrounding it.
 </p>
 
 <h2 id="references">References</h2><hr>
 
 <ol>
-<li id="reference-dcfr">Noam Brown and Tuomas Sandholm. <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/abs/1809.04040"><em>Solving Imperfect-Information Games via Discounted Regret Minimization</em></a>. 2019. <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/pdf/1809.04040">Read the paper (PDF)</a>.</li>
-<li>GTO Wizard. <a target="_blank" rel="noopener noreferrer" href="https://blog.gtowizard.com/range-morphology/"><em>Range Morphology</em></a>. Range image reproduced above via the original image URL.</li>
-<li>Lyra. <a target="_blank" rel="noopener noreferrer" href="https://github.com/lyramakesmusic/neuron-explorer">Neuron Explorer</a>.</li>
-<li>Nick Ingravallo. <a target="_blank" rel="noopener noreferrer" href="https://github.com/nickingravallo/TurboFire">TurboFire source code</a>.</li>
+<li id="reference-dcfr">Noam Brown and Tuomas Sandholm. <a href="https://arxiv.org/abs/1809.04040"><em>Solving Imperfect-Information Games via Discounted Regret Minimization</em></a>. 2019. <a href="https://arxiv.org/pdf/1809.04040">Read the paper (PDF)</a>.</li>
+<li id="reference-range-morphology">GTO Wizard. <a href="https://blog.gtowizard.com/range-morphology/"><em>Range Morphology</em></a>. Range image reproduced above via the original image URL.</li>
+<li id="reference-neuron-explorer">Lyra. <a href="https://github.com/lyramakesmusic/neuron-explorer">Neuron Explorer</a>.</li>
+<li id="reference-turbofire">Nick Ingravallo. <a href="https://github.com/nickingravallo/TurboFire">TurboFire source code</a>.</li>
+<li id="reference-nashgpt-1">Nick Ingravallo. <a href="../Random/20260731/index.html"><em>NashGPT 1.0</em></a>.</li>
+<li id="reference-nashgpt-16">Nick Ingravallo. <a href="../Random/20260824/index.html"><em>NashGPT 1.6</em></a>.</li>
+<li id="reference-emotion-concepts">Anthropic. <a href="https://www.anthropic.com/research/emotion-concepts-function"><em>Emotion concepts in language models</em></a>.</li>
 </ol>
 <hr>
 <p style="text-align: center;"><i><a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=hyVVoLy4LScM&amp;start_radio=1">(it's going down)</a></i></p>
