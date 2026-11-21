@@ -192,7 +192,7 @@ Unfortunately I still managed to overfit the model, as I did not include a rando
 </p>
 
 <p>
-NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own. The NashGPT 1.6 results compare fresh solver output against canonical and non-canonical model inputs.
+NashGPT 1.6 addressed the overfitting issue by holding out 155 complete canonical flops during training and testing the model on those unseen boards. Passing non-canonical hands directly into the model performed much worse, which showed that suit canonicalization was still required rather than something the model had learned on its own.
 </p>
 
 <p>
@@ -249,13 +249,9 @@ Second, transformer models seem to act as some form of compression. It was seen 
 Finally, scaling models is incredibly expensive. Each training run only cost me a few dollars on an Nvidia A40, but had I added turn and river data into the mix, the training run would have gotten incredibly expensive. Holding all of the training data (potentially terabytes worth) would have been expensive on its own, without the VRAM required for training the model on each street!
 </p>
 
-<p>
-Before concluding, here are some examples taken from the NashGPT 1.6 run:
-</p>
-
 <section id="solver-results" aria-labelledby="results-heading">
-<h2 id="results-heading">NashGPT 1.6 Results</h2><hr>
-<p>Solver, canonical, and non-canonical action probabilities from the NashGPT 1.6 writeup.</p>
+<h2 id="results-heading">NashGPT 1.7 Results</h2><hr>
+<p>Each table shows how often the solver and NashGPT 1.7 choose an action. The non-canonical predictions use the suits shown in the prompt. The canonical predictions use the same hand with its suits relabeled into a standard order.</p>
 <div class="result-controls" hidden aria-label="Choose a poker scenario">
 <button type="button" data-spot="0" aria-controls="spot-0" aria-pressed="true">Depth 0</button>
 <button type="button" data-spot="1" aria-controls="spot-1" aria-pressed="false">Depth 1</button>
@@ -264,59 +260,54 @@ Before concluding, here are some examples taken from the NashGPT 1.6 run:
 <button type="button" data-spot="4" aria-controls="spot-4" aria-pressed="false">Depth 2 (paired flop)</button>
 </div>
 <div class="spot-panel" id="spot-0">
-<h3>Depth 0</h3>
 <p>Prompt: <code>&lt;HOLE&gt; Ah Kh &lt;FLOP&gt; Qh Jd 7c &lt;BETTING&gt;</code></p>
 <div class="table-scroll"><table>
 <caption>Depth 0 action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><em>HERO_CHECK</em></td><td>94.39%</td><td>91.67%</td><td>82.55%</td></tr>
-<tr><td><em>HERO_ALLIN</em></td><td>4.54%</td><td>5.63%</td><td>3.63%</td></tr>
-<tr><td><em>HERO_BET100</em></td><td>0.94%</td><td>1.43%</td><td>12.16%</td></tr>
-<tr><td><em>HERO_BET40</em></td><td>0.14%</td><td>1.27%</td><td>1.66%</td></tr>
+<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
+<tr><td><em>HERO_CHECK</em></td><td>94.39%</td><td>92.39%</td><td>91.35%</td></tr>
+<tr><td><em>HERO_ALLIN</em></td><td>4.54%</td><td>4.90%</td><td>5.40%</td></tr>
+<tr><td><em>HERO_BET100</em></td><td>0.94%</td><td>1.43%</td><td>1.65%</td></tr>
+<tr><td><em>HERO_BET40</em></td><td>0.14%</td><td>1.28%</td><td>1.60%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-1">
-<h3>Depth 1</h3>
 <p>Prompt: <code>&lt;HOLE&gt; Jc 7c &lt;FLOP&gt; 9h 8h 6d &lt;BETTING&gt; OPP_CHECK</code></p>
 <div class="table-scroll"><table>
 <caption>Depth 1 action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><em>HERO_ALLIN</em></td><td>92.53%</td><td>74.32%</td><td>52.18%</td></tr>
-<tr><td><em>HERO_BET40</em></td><td>2.84%</td><td>14.14%</td><td>2.59%</td></tr>
-<tr><td><em>HERO_BET100</em></td><td>2.83%</td><td>10.93%</td><td>24.30%</td></tr>
-<tr><td><em>HERO_CHECK</em></td><td>1.79%</td><td>0.61%</td><td>20.94%</td></tr>
+<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
+<tr><td><em>HERO_ALLIN</em></td><td>92.53%</td><td>65.42%</td><td>64.56%</td></tr>
+<tr><td><em>HERO_BET40</em></td><td>2.84%</td><td>23.67%</td><td>23.69%</td></tr>
+<tr><td><em>HERO_BET100</em></td><td>2.83%</td><td>9.95%</td><td>10.86%</td></tr>
+<tr><td><em>HERO_CHECK</em></td><td>1.79%</td><td>0.96%</td><td>0.89%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-2">
-<h3>Depth 2</h3>
 <p>Prompt: <code>&lt;HOLE&gt; Js 5s &lt;FLOP&gt; Ah 7h 2h &lt;BETTING&gt; HERO_CHECK OPP_BET40</code></p>
 <div class="table-scroll"><table>
 <caption>Depth 2 action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><em>HERO_FOLD</em></td><td>94.89%</td><td>93.20%</td><td>81.61%</td></tr>
-<tr><td><em>HERO_ALLIN</em></td><td>2.95%</td><td>4.29%</td><td>6.64%</td></tr>
-<tr><td><em>HERO_CALL</em></td><td>1.21%</td><td>1.29%</td><td>10.79%</td></tr>
-<tr><td><em>HERO_RAISE_3X</em></td><td>0.95%</td><td>1.21%</td><td>0.96%</td></tr>
+<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
+<tr><td><em>HERO_FOLD</em></td><td>94.89%</td><td>92.01%</td><td>92.52%</td></tr>
+<tr><td><em>HERO_ALLIN</em></td><td>2.95%</td><td>4.95%</td><td>4.55%</td></tr>
+<tr><td><em>HERO_CALL</em></td><td>1.21%</td><td>2.04%</td><td>1.96%</td></tr>
+<tr><td><em>HERO_RAISE_3X</em></td><td>0.95%</td><td>0.99%</td><td>0.97%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-3">
-<h3>Depth 3</h3>
 <p>Prompt: <code>&lt;HOLE&gt; Js Ts &lt;FLOP&gt; Ah Kd Qc &lt;BETTING&gt; OPP_CHECK HERO_BET40 OPP_RAISE_3X</code></p>
 <div class="table-scroll"><table>
 <caption>Depth 3 action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><em>HERO_CALL</em></td><td>50.00%</td><td>53.02%</td><td>99.98%</td></tr>
-<tr><td><em>HERO_FOLD</em></td><td>50.00%</td><td>46.98%</td><td>0.02%</td></tr>
+<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
+<tr><td><em>HERO_CALL</em></td><td>50.00%</td><td>46.01%</td><td>45.28%</td></tr>
+<tr><td><em>HERO_FOLD</em></td><td>50.00%</td><td>53.99%</td><td>54.72%</td></tr>
 </table></div>
 </div>
 <div class="spot-panel" id="spot-4">
-<h3>Depth 2 (paired flop)</h3>
 <p>Prompt: <code>&lt;HOLE&gt; Ah Qh &lt;FLOP&gt; Kd Kh 4c &lt;BETTING&gt; HERO_CHECK OPP_ALLIN</code></p>
 <div class="table-scroll"><table>
 <caption>Depth 2 (paired flop) action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">Canonical</th><th scope="col">Non-canonical</th></tr>
-<tr><td><em>HERO_FOLD</em></td><td>92.78%</td><td>61.05%</td><td>17.60%</td></tr>
-<tr><td><em>HERO_CALL</em></td><td>7.22%</td><td>38.95%</td><td>82.40%</td></tr>
+<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
+<tr><td><em>HERO_FOLD</em></td><td>92.78%</td><td>61.96%</td><td>46.23%</td></tr>
+<tr><td><em>HERO_CALL</em></td><td>7.22%</td><td>38.04%</td><td>53.77%</td></tr>
 </table></div>
 </div>
 </section>
