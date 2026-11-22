@@ -256,8 +256,6 @@ Finally, scaling models is incredibly expensive. Each training run only cost me 
 <button type="button" data-spot="0" aria-controls="spot-0" aria-pressed="true">Depth 0</button>
 <button type="button" data-spot="1" aria-controls="spot-1" aria-pressed="false">Depth 1</button>
 <button type="button" data-spot="2" aria-controls="spot-2" aria-pressed="false">Depth 2</button>
-<button type="button" data-spot="3" aria-controls="spot-3" aria-pressed="false">Depth 3</button>
-<button type="button" data-spot="4" aria-controls="spot-4" aria-pressed="false">Depth 2 (paired flop)</button>
 </div>
 <div class="spot-panel" id="spot-0">
 <p>Prompt: <code>&lt;HOLE&gt; Ah Kh &lt;FLOP&gt; Qh Jd 7c &lt;BETTING&gt;</code></p>
@@ -290,24 +288,6 @@ Finally, scaling models is incredibly expensive. Each training run only cost me 
 <tr><td><em>HERO_ALLIN</em></td><td>2.95%</td><td>4.95%</td><td>4.55%</td></tr>
 <tr><td><em>HERO_CALL</em></td><td>1.21%</td><td>2.04%</td><td>1.96%</td></tr>
 <tr><td><em>HERO_RAISE_3X</em></td><td>0.95%</td><td>0.99%</td><td>0.97%</td></tr>
-</table></div>
-</div>
-<div class="spot-panel" id="spot-3">
-<p>Prompt: <code>&lt;HOLE&gt; Js Ts &lt;FLOP&gt; Ah Kd Qc &lt;BETTING&gt; OPP_CHECK HERO_BET40 OPP_RAISE_3X</code></p>
-<div class="table-scroll"><table>
-<caption>Depth 3 action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
-<tr><td><em>HERO_CALL</em></td><td>50.00%</td><td>46.01%</td><td>45.28%</td></tr>
-<tr><td><em>HERO_FOLD</em></td><td>50.00%</td><td>53.99%</td><td>54.72%</td></tr>
-</table></div>
-</div>
-<div class="spot-panel" id="spot-4">
-<p>Prompt: <code>&lt;HOLE&gt; Ah Qh &lt;FLOP&gt; Kd Kh 4c &lt;BETTING&gt; HERO_CHECK OPP_ALLIN</code></p>
-<div class="table-scroll"><table>
-<caption>Depth 2 (paired flop) action probabilities</caption>
-<tr><th scope="col">Action</th><th scope="col">Solver</th><th scope="col">1.7 canonical</th><th scope="col">1.7 non-canonical</th></tr>
-<tr><td><em>HERO_FOLD</em></td><td>92.78%</td><td>61.96%</td><td>46.23%</td></tr>
-<tr><td><em>HERO_CALL</em></td><td>7.22%</td><td>38.04%</td><td>53.77%</td></tr>
 </table></div>
 </div>
 </section>
