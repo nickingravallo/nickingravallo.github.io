@@ -46,7 +46,7 @@ TurboFire is a game theory optimal poker solver written in C++. It has none of t
 </p>
 
 <p>
-If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it! Feel free to skip around the article to your level of interest and expertise - the code for the solver is linked on the bottom. This post's content is entirely human written, with some formatting help :)
+If you haven't played poker, the article will go through the basics of the game, the concepts and algorithms behind game theory optimal poker, and the concepts that can be taken from it. Feel free to skip around the article to your level of interest and expertise - the code for the solver is linked on the bottom. This post's content is entirely human written, with some formatting help :)
 </p>
 
 <h2 id="poker">Poker (Prologue)</h2><hr>
@@ -96,7 +96,7 @@ Regret within the algorithm is used slightly differently than in common vernacul
 </p>
 
 <p>
-Discounting requires a bit more context first!
+Discounting requires a bit more context first.
 </p>
 
 <h2 id="dcfr">DCFR</h2><hr>
@@ -118,11 +118,11 @@ Once your CFV for the terminal node is calculated, you return the vector of valu
 </p>
 
 <p>
-Imagine you accumulated -2 regret from folding, 3 regret from calling, 2 from raising to $3, and -1 from raising to $6. You can throw out the regrets that are negative, as those are actions you wish you didn’t take<em> (remember that regret is more like FOMO!)</em> and the positive regret is summed. 3 regret from calling + 2 regret from raising to $3, equals 5 total. Then, the strategy is calculated for each action, taking the individual action’s regret and dividing it against the total regret. We would be met with a strategy profile of<em> 0% fold, 60% call, 40% raise to $3,</em> and <em>0% raise to $6</em>.
+Imagine you accumulated -2 regret from folding, 3 regret from calling, 2 from raising to $3, and -1 from raising to $6. You can throw out the regrets that are negative, as those are actions you wish you didn’t take<em> (remember that regret is more like FOMO)</em> and the positive regret is summed. 3 regret from calling + 2 regret from raising to $3, equals 5 total. Then, the strategy is calculated for each action, taking the individual action’s regret and dividing it against the total regret. We would be met with a strategy profile of<em> 0% fold, 60% call, 40% raise to $3,</em> and <em>0% raise to $6</em>.
 </p>
 
 <p>
-Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From this article by GTO Wizard <a href="#reference-range-morphology" aria-label="Reference 2">[2]</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically!
+Naturally, good actions are rewarded and poor decisions are punished. Some structure will begin to rise in the results, with obvious results such as aces or kings being played aggressively. From this article by GTO Wizard <a href="#reference-range-morphology" aria-label="Reference 2">[2]</a> there is a picture (full credit to them) of some peculiar hands being played aggressively alongside our typical <em>‘top tier’</em> hands. The algorithm will find weird pockets of hands that have properties that make them good enough to play aggressively as bluffs. As a human, you may say things such as <em>“well… if I hold a jack the opponent is less likely to have one, so we can play aggressively!”</em> to make sense of the algorithm. You can apply these concepts in game, but the solver finds them mathematically.
 </p>
 
 <figure>
@@ -133,7 +133,7 @@ Naturally, good actions are rewarded and poor decisions are punished. Some struc
 <h2 id="discounting">Discounting</h2><hr>
 
 <p>
-The last part of the algorithm is the <em>D</em> in DCFR, which refers to <em>discount</em>. The algorithm can learn incorrect biases very early on in the training cycle, which can take a very long time to train out. By discounting earlier runs, it can help mitigate a scenario with a large regret dominating future strategies, such as an initial 500,000 regret accumulation for a check and 1 regret for raising $3. The discounting is applied after each iteration, with multiple variables for calculating decay. The paper describing the algorithm <a href="#reference-dcfr" aria-label="Reference 1">[1]</a> is linked at the bottom of the page!
+The last part of the algorithm is the <em>D</em> in DCFR, which refers to <em>discount</em>. The algorithm can learn incorrect biases very early on in the training cycle, which can take a very long time to train out. By discounting earlier runs, it can help mitigate a scenario with a large regret dominating future strategies, such as an initial 500,000 regret accumulation for a check and 1 regret for raising $3. The discounting is applied after each iteration, with multiple variables for calculating decay. The paper describing the algorithm <a href="#reference-dcfr" aria-label="Reference 1">[1]</a> is linked at the bottom of the page.
 </p>
 
 <h2 id="transformer-models">Transformer Models</h2><hr>
@@ -203,7 +203,7 @@ It’s possible to see how well a model learned a certain concept. For example, 
 </p>
 
 <p>
-Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream at the <code>&lt;BETTING&gt;</code> token’s position. If certain neurons keep lighting up, then we know it managed to learn a concept!
+Since our <em>‘prompt’</em> looks like the following: (<code>&lt;START&gt; &lt;HOLE&gt; 7 c 2 c &lt;FLOP&gt; A s Q h 7 s &lt;BETTING&gt;</code>) we can run many hands of a similar grouping in the model and look into the residual stream at the <code>&lt;BETTING&gt;</code> token’s position. If certain neurons keep lighting up, then we know the model managed to learn a concept!
 </p>
 
 <h2 id="influenced-by-lyra">Influence from Lyra</h2><hr>
@@ -235,17 +235,19 @@ The model was able to retain a decent amount of strategy compared to the solver.
 </p>
 
 <p>
-First, transformers are able to hold much more complex information than just the face value of the token shown to the user. The final hidden state the position of <em>&lt;BETTING&gt;</em> doesn't just help the model produce an action - it holds an internal representation of the type of hands being held, the board texture, and even loose concepts of bluffing. Scaling up to real language models, they can seemingly represent emotions <a href="#reference-emotion-concepts" aria-label="Reference 4">[4]</a> and understand the patterns of languages they're translating, both natural and programming.
+First, transformers are able to hold much more complex information than just the face value of the token shown to the user. The final hidden state the position of <em>&lt;BETTING&gt;</em> doesn't just help the model produce an action - it holds an internal representation of the type of hands being held, the board texture, and responses to players actions. Scaling up to real language models, they can seemingly represent emotions <a href="#reference-emotion-concepts" aria-label="Reference 4">[4]</a> and understand the patterns of languages they're translating, both natural and programming.
 </p>
 
 <p>
-Second, transformer models seem to act as some form of compression. It was seen in the overfit version of NashGPT that had essentially compressed the training data into its weights, and utterly failed when presented with hands it did not see in training. This compression can hold the actual patterns if trained correctly!
+Second, transformer models seem to act as some form of compression. It was seen in the overfit version of NashGPT that had essentially compressed the training data into its weights, and utterly failed when presented with hands it did not see in training. This compression can hold the actual patterns of game play if trained correctly.
 </p>
 
 <p>
-Finally, scaling models is incredibly expensive. Each training run only cost me a few dollars on an Nvidia A40, but had I added turn and river data into the mix, the training run would have gotten incredibly expensive. Holding all of the training data (potentially terabytes worth) would have been expensive on its own, without the VRAM required for training the model on each street!
+Finally, scaling models is incredibly expensive. Each training run only cost me a few dollars on an Nvidia A40, but had I added turn and river data into the mix, the training run would have gotten incredibly expensive. Holding all of the training data (potentially terabytes worth) would have been expensive on its own, without the VRAM required for training the model on each street.
 </p>
-
+<p>
+Below are the results from NashGPT 1.7. The output from the solver vs the model show that it is possible to retain some of the learned actions from the solver. Various "depths" are shown, or how far down a specific path in the game tree we are traversing. Depth 0 = no actions, Depth 1 = action from player 1, Depth 2 = action from player 2, and so on. As seen, precision and solver-match is lost as the the depth into the game tree increases. In the future, it may be worth abstracting hero vs villain (opp) actions into just 'actions' to see if the model can build an internal representation of a player.
+</p>
 <section id="solver-results" aria-labelledby="results-heading">
 <h2 id="results-heading">NashGPT 1.7 Results</h2><hr>
 <p>Each table shows how often the solver and NashGPT 1.7 choose an action. The non-canonical predictions use the suits shown in the prompt.</p>
